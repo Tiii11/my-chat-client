@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Chat</title> <!-- Updated Title -->
+    <title>Nexus Chat</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <!-- 
-        Socket.IO Client Library: Choose ONE 
-        Using CDN here for example. Change to local ./libs/socket.io.js for Electron build.
+        Socket.IO Client Library: Choose ONE based on your target platform
+        (Using CDN here for example. Change to local ./libs/socket.io.js for Electron build.)
     -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    
+
     <style>
-        /* PASTE YOUR LATEST FULL CSS HERE - Including styles for auth forms */
+        /* PASTE YOUR FULL CSS BLOCK HERE - Styles remain the same */
          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
 
         :root {
@@ -31,7 +31,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: var(--font-primary); background-color: var(--bg-color); background: linear-gradient(135deg, var(--bg-color), var(--secondary-accent)); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; transition: background var(--transition-speed) var(--transition-smooth), color var(--transition-speed) var(--transition-smooth); }
         .app-container { width: 95vw; max-width: 800px; height: 90vh; max-height: 750px; background-color: var(--ui-bg); backdrop-filter: blur(var(--blur-amount)); border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--ui-border); transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth); }
-        .chat-header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); flex-shrink: 0; background-color: transparent; transition: border-color var(--transition-speed) var(--transition-smooth); position: relative; /* For logout button */ }
+        .chat-header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); flex-shrink: 0; background-color: transparent; transition: border-color var(--transition-speed) var(--transition-smooth); position: relative; }
         .chat-header h1 { font-family: var(--font-display); font-size: 1.4em; color: var(--primary-accent); transition: color var(--transition-speed) var(--transition-smooth); letter-spacing: 1px; }
         .chat-header .connection-status { font-size: 0.7em; padding: 3px 8px; border-radius: 5px; margin-left: auto; margin-right: 15px; text-transform: uppercase; font-weight: bold;}
         .chat-header .connection-status.connected { background-color: #28a745; color: white; }
@@ -41,35 +41,14 @@
         .switch-track { width: 50px; height: 26px; background-color: var(--ui-border); border-radius: 13px; position: relative; transition: background-color var(--transition-speed) var(--transition-smooth); }
         .switch-thumb { width: 20px; height: 20px; background-color: var(--ui-bg-opaque); border-radius: 50%; position: absolute; top: 3px; left: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         body.dark-mode .switch-thumb { background-color: var(--text-color-dark); }
-        #logoutButton { /* Style the logout button */
-            background: none; border: 1px solid var(--ui-border); color: var(--text-color);
-            padding: 4px 10px; border-radius: 5px; cursor: pointer; margin-left: 15px;
-            font-size: 0.8em; transition: all 0.2s ease; display: none; /* Hide initially */
-        }
+        #logoutButton { background: none; border: 1px solid var(--ui-border); color: var(--text-color); padding: 4px 10px; border-radius: 5px; cursor: pointer; margin-left: 15px; font-size: 0.8em; transition: all 0.2s ease; display: none; }
         #logoutButton:hover { background-color: var(--ui-border); border-color: var(--text-color);}
         body.dark-mode #logoutButton { border-color: var(--ui-border-dark); }
         body.dark-mode #logoutButton:hover { background-color: var(--ui-border-dark); border-color: var(--text-color-dark);}
-
-        /* Auth Container */
-         #authContainer {
-             display: flex; /* Shown by default */
-             flex-direction: column; align-items: center; padding: 30px;
-             flex-grow: 1; justify-content: center;
-             background-color: var(--ui-bg-opaque);
-             transition: background-color var(--transition-speed) var(--transition-smooth);
-         }
-        #loginForm, #registerForm {
-            display: flex; /* Login shown by default */
-             flex-direction: column; gap: 15px; width: 90%; max-width: 350px;
-             padding: 20px; border-radius: 10px;
-             background-color: var(--ui-bg-opaque);
-             border: 1px solid var(--ui-border);
-             box-shadow: var(--shadow-light);
-        }
-         body.dark-mode #loginForm, body.dark-mode #registerForm {
-             box-shadow: var(--shadow-dark);
-         }
-        #registerForm { display: none; } /* Hide register initially */
+        #authContainer { display: flex; flex-direction: column; align-items: center; padding: 30px; flex-grow: 1; justify-content: center; background-color: var(--ui-bg-opaque); transition: background-color var(--transition-speed) var(--transition-smooth); }
+        #loginForm, #registerForm { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 350px; padding: 20px; border-radius: 10px; background-color: var(--ui-bg-opaque); border: 1px solid var(--ui-border); box-shadow: var(--shadow-light); }
+         body.dark-mode #loginForm, body.dark-mode #registerForm { box-shadow: var(--shadow-dark); }
+        #registerForm { display: none; } 
          #authContainer h2 { text-align: center; margin-bottom: 10px; color: var(--primary-accent); font-family: var(--font-display); }
          #authContainer input[type="text"], #authContainer input[type="password"] { padding: 12px; border-radius: 8px; border: 1px solid var(--ui-border); background-color: var(--input-bg); color: var(--text-color); font-size: 0.95em; }
          #authContainer button { padding: 12px; border-radius: 8px; background: var(--primary-accent); color: white; border: none; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.2s ease; }
@@ -78,8 +57,6 @@
          #authContainer p { text-align: center; font-size: 0.9em; }
          #authContainer a { color: var(--primary-accent); text-decoration: none; cursor: pointer; }
          #authContainer a:hover { text-decoration: underline; }
-
-        /* Main Layout */
         .chat-main { display: flex; flex-grow: 1; overflow: hidden; border-top: 1px solid var(--ui-border); }
         .sidebar { width: 180px; border-right: 1px solid var(--ui-border); display: flex; flex-direction: column; background-color: transparent; padding-top: 15px; padding-bottom: 15px; overflow-y: auto; flex-shrink: 0; transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth); }
         .sidebar h2 { font-size: 0.75em; padding: 8px 15px 4px 15px; margin-top: 10px; color: var(--secondary-accent); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
@@ -112,8 +89,6 @@
         .message-bubble.pm-received { background-color: var(--ui-border-light); border: 1px solid var(--text-color-light); color: var(--msg-received-text-light); }
         body.dark-mode .message-bubble.pm-sent { background: var(--secondary-accent-dark); border: 1px dashed var(--primary-accent-dark); color: var(--msg-sent-text-dark); }
         body.dark-mode .message-bubble.pm-received { background-color: var(--ui-border-dark); border: 1px dashed var(--text-color-dark); color: var(--msg-received-text-dark); }
-        
-        /* Message Input Area */
         .message-input-area { display: flex; padding: 15px 20px; border-top: 1px solid var(--ui-border); background-color: var(--ui-bg); backdrop-filter: blur(var(--blur-amount)); transition: border-color var(--transition-speed) var(--transition-smooth), background-color var(--transition-speed) var(--transition-smooth); flex-shrink: 0; gap: 10px; }
         .message-input-area textarea { flex-grow: 1; padding: 12px 18px; border: 1px solid var(--ui-border); border-radius: 22px; resize: none; font-family: var(--font-primary); font-size: 0.95em; background-color: var(--input-bg); color: var(--text-color); transition: all var(--transition-speed) var(--transition-smooth); min-height: 46px; max-height: 100px; overflow-y: auto; }
         .message-input-area textarea::placeholder { color: var(--placeholder-color); transition: color var(--transition-speed) var(--transition-smooth); }
@@ -131,7 +106,6 @@
         <div class="chat-header">
             <h1 id="windowTitle">Nexus Chat</h1>
             <span id="connectionStatus" class="connection-status disconnected">Offline</span>
-             <!-- Add Logout Button -->
              <button id="logoutButton" style="display: none;">Logout</button>
             <div class="theme-switcher" id="themeSwitcher">
                 <div class="switch-track"><div class="switch-thumb" id="switchThumb"></div></div>
@@ -140,7 +114,6 @@
 
          <!-- Auth Container -->
          <div id="authContainer" style="display: flex; flex-direction: column; align-items: center; padding: 30px; flex-grow: 1; justify-content: center; background-color: var(--ui-bg-opaque);">
-            <!-- Login Form -->
             <form id="loginForm" style="display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 350px; margin-bottom: 30px; padding: 20px; border-radius: 10px; background-color: var(--ui-bg-opaque); border: 1px solid var(--ui-border); box-shadow: var(--shadow-light);">
                 <h2>Login</h2>
                 <input type="text" id="loginUsername" placeholder="Username" required style="padding: 12px; border-radius: 8px; border: 1px solid var(--ui-border); background-color: var(--input-bg); color: var(--text-color); font-size: 0.95em;">
@@ -149,7 +122,6 @@
                 <p id="loginError" class="error-message"></p>
                 <p style="text-align: center; font-size: 0.9em;">Don't have an account? <a href="#" id="showRegisterLink">Register</a></p>
             </form>
-            <!-- Registration Form -->
             <form id="registerForm" style="display: none; flex-direction: column; gap: 15px; width: 90%; max-width: 350px; padding: 20px; border-radius: 10px; background-color: var(--ui-bg-opaque); border: 1px solid var(--ui-border); box-shadow: var(--shadow-light);">
                 <h2>Register</h2>
                 <input type="text" id="registerUsername" placeholder="Username (3-15 chars, A-Z, 0-9, _)" required style="padding: 12px; border-radius: 8px; border: 1px solid var(--ui-border); background-color: var(--input-bg); color: var(--text-color); font-size: 0.95em;">
@@ -160,7 +132,6 @@
                 <p style="text-align: center; font-size: 0.9em;">Already have an account? <a href="#" id="showLoginLink">Login</a></p>
             </form>
          </div>
-
 
         <!-- Main Chat Area -->
         <div class="chat-main" id="chatMainArea" style="display: none;">
@@ -193,7 +164,6 @@
         const windowTitle = document.getElementById('windowTitle');
         const connectionStatusEl = document.getElementById('connectionStatus');
         const logoutButton = document.getElementById('logoutButton');
-        // Auth Area
         const authContainer = document.getElementById('authContainer');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
@@ -206,31 +176,29 @@
         const registerErrorDisplay = document.getElementById('registerError');
         const showRegisterLink = document.getElementById('showRegisterLink');
         const showLoginLink = document.getElementById('showLoginLink');
-        // Main Chat Area
         const chatMainArea = document.getElementById('chatMainArea');
         const sidebar = document.getElementById('sidebar');
         const userList = document.getElementById('userList');
         const conversationList = document.getElementById('conversationList');
         const chatContent = document.getElementById('chatContent');
-        // Message Input Area
         const chatInputArea = document.getElementById('chatInputArea');
         const messageInput = document.getElementById('messageInput');
         const sendMessageBtn = document.getElementById('sendMessageBtn');
 
         // --- App State ---
-        const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com';
-        // const ACTIVE_SERVER_URL = 'http://localhost:3000';
-        let socket = null; // Initialize as null
-        let myUsername = localStorage.getItem('username') || null; // Restore username from localStorage
+        const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com'; // <-- CORRECTED
+        // const ACTIVE_SERVER_URL = 'http://localhost:3000'; // For local testing
+        let socket = null; 
+        let myUsername = localStorage.getItem('username') || null; 
         let authToken = localStorage.getItem('token') || null;
         let activeConversationId = 'global';
-        const pmMessageContainers = {};
+        const pmMessageContainers = {}; 
 
         // --- Theme Logic ---
         let currentTheme = localStorage.getItem('app-theme') || 'light';
         function applyTheme(theme) { /* ... same ... */ }
         if (themeSwitcher) { /* ... same ... */ }
-        function applyTheme(theme) {
+         function applyTheme(theme) {
             document.body.classList.toggle('dark-mode', theme === 'dark');
             if (typeof anime === 'function') { anime({ targets: switchThumb, translateX: theme === 'dark' ? 24 : 0, duration: 400, easing: 'easeOutQuint' }); }
         }
@@ -238,6 +206,8 @@
 
 
         // --- UI State Functions ---
+        function showAuthView(view = 'login') { /* ... same ... */ }
+        function showChatView() { /* ... same ... */ }
         function showAuthView(view = 'login') {
             if (!authContainer || !chatMainArea || !chatInputArea) return;
             console.log(`DEBUG: Showing ${view} view`);
@@ -248,12 +218,11 @@
             if (registerForm) registerForm.style.display = (view === 'register') ? 'flex' : 'none';
             if (view === 'login' && loginUsernameInput) loginUsernameInput.focus();
             if (view === 'register' && registerUsernameInput) registerUsernameInput.focus();
-            if (connectionStatusEl) connectionStatusEl.textContent = 'Login Required';
+            if (connectionStatusEl) connectionStatusEl.textContent = 'Login Required'; 
             if (connectionStatusEl) connectionStatusEl.classList.remove('connected', 'error');
-            if (connectionStatusEl) connectionStatusEl.classList.add('disconnected'); // Use disconnected style for login required
-            if (logoutButton) logoutButton.style.display = 'none'; // Hide logout button
+            if (connectionStatusEl) connectionStatusEl.classList.add('disconnected'); 
+            if (logoutButton) logoutButton.style.display = 'none'; 
         }
-
         function showChatView() {
             if (!authContainer || !chatMainArea || !chatInputArea) return;
             console.log("DEBUG: showChatView (authenticated)");
@@ -261,9 +230,8 @@
             chatMainArea.style.display = 'flex';
             chatInputArea.style.display = 'flex';
             if (messageInput) messageInput.focus();
-            if (logoutButton) logoutButton.style.display = 'inline-block'; // Show logout button
+            if (logoutButton) logoutButton.style.display = 'inline-block'; 
         }
-
 
         // --- API Call Functions ---
         async function handleLogin(event) {
@@ -273,18 +241,25 @@
             if (loginErrorDisplay) loginErrorDisplay.textContent = '';
 
             try {
-                // Use Fetch API to send login request to backend
-                const response = await fetch('/api/auth/login', { // Assuming server API is on same origin or proxied
+                // *** FIXED URL ***
+                const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/login`; 
+                console.log("DEBUG: Attempting login to:", apiUrl);
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                const data = await response.json();
-
+                // Check if response is ok FIRST, then try to parse JSON
                 if (!response.ok) {
-                    throw new Error(data.message || `Login failed (${response.status})`);
+                    let errorMsg = `Login failed (${response.status})`;
+                    try { // Try to get error message from server JSON response
+                         const errorData = await response.json();
+                         errorMsg = errorData.message || errorMsg;
+                    } catch (jsonError) { /* Ignore if response wasn't JSON */ }
+                    throw new Error(errorMsg);
                 }
 
+                const data = await response.json(); // Now parse JSON
                 console.log('DEBUG: Login successful', data);
                 authToken = data.token;
                 myUsername = data.user.username;
@@ -292,7 +267,7 @@
                 localStorage.setItem('username', myUsername);
                 if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`;
                 showChatView();
-                connectToServer(); // Connect to Socket.IO *after* successful login
+                connectToServer();
 
             } catch (error) {
                 console.error('DEBUG: Login failed:', error);
@@ -307,23 +282,28 @@
             const confirmPassword = registerConfirmPasswordInput.value;
             if (registerErrorDisplay) registerErrorDisplay.textContent = '';
 
-            if (password !== confirmPassword) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Passwords do not match.'; return; }
-            if (password.length < 6) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Password min 6 characters.'; return; }
-            // Add client-side format validation if desired (matches server)
-            if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 15) {
-                 if(registerErrorDisplay) registerErrorDisplay.textContent = 'Username invalid (3-15 chars, A-Z, 0-9, _).';
-                 return;
-            }
+            if (password !== confirmPassword) { /* ... validation ... */ if(registerErrorDisplay) registerErrorDisplay.textContent = 'Passwords do not match.'; return; }
+            if (password.length < 6) { /* ... validation ... */ if(registerErrorDisplay) registerErrorDisplay.textContent = 'Password min 6 characters.'; return; }
+            if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 15) { /* ... validation ... */ if(registerErrorDisplay) registerErrorDisplay.textContent = 'Username invalid (3-15 chars, A-Z, 0-9, _).'; return; }
 
             try {
-                 const response = await fetch('/api/auth/register', {
+                 // *** FIXED URL ***
+                 const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/register`; 
+                 console.log("DEBUG: Attempting registration to:", apiUrl);
+                 const response = await fetch(apiUrl, {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({ username, password })
                  });
-                 const data = await response.json();
-                 if (!response.ok) { throw new Error(data.message || `Registration failed (${response.status})`); }
-
+                 // Check if response is ok FIRST
+                 if (!response.ok) {
+                     let errorMsg = `Registration failed (${response.status})`;
+                     try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } 
+                     catch (jsonError) { /* Ignore */ }
+                     throw new Error(errorMsg);
+                 }
+                 
+                 const data = await response.json(); // Now parse
                  console.log('DEBUG: Registration successful', data);
                  alert('Registration successful! Please login.');
                  showAuthView('login');
@@ -334,12 +314,11 @@
             }
         }
 
+        function handleLogout() { /* ... same logic ... */ }
         function handleLogout() {
             console.log("DEBUG: Logging out");
-            localStorage.removeItem('token');
-            localStorage.removeItem('username');
-            authToken = null;
-            myUsername = null;
+            localStorage.removeItem('token'); localStorage.removeItem('username');
+            authToken = null; myUsername = null;
             if (socket && socket.connected) { socket.disconnect(); }
             socket = null;
             if (windowTitle) windowTitle.textContent = 'Nexus Chat';
@@ -349,60 +328,24 @@
              document.querySelectorAll('.chat-content .messages-container:not(#messagesContainer_global)').forEach(div => div.remove());
              if(userList) userList.innerHTML = '';
              document.querySelectorAll('#conversationList li:not([data-conversation-id="global"])').forEach(li => li.remove());
-             Object.keys(pmMessageContainers).forEach(key => delete pmMessageContainers[key]); // Clear cache too
+             Object.keys(pmMessageContainers).forEach(key => delete pmMessageContainers[key]);
              activeConversationId = 'global';
-             if (conversationList) {
-                document.querySelectorAll('#conversationList li').forEach(li => {
-                    li.classList.toggle('active', li.dataset.conversationId === 'global');
-                    li.classList.remove('has-unread');
-                });
-             }
+             if (conversationList) { document.querySelectorAll('#conversationList li').forEach(li => { li.classList.toggle('active', li.dataset.conversationId === 'global'); li.classList.remove('has-unread'); }); }
         }
 
-
         // --- Socket.IO Connection (Modified) ---
+        function connectToServer() { /* ... same logic ... */ }
         function connectToServer() {
             if (socket && socket.connected) { console.log("DEBUG: Socket already connected."); return; }
             if (!authToken) { console.log("DEBUG: No auth token, cannot connect socket."); showAuthView('login'); return; }
-
             console.log(`DEBUG: Attempting to connect socket with auth token...`);
             if(connectionStatusEl) connectionStatusEl.textContent = 'Connecting...';
-
-            if (socket) { socket.disconnect(); } // Disconnect old socket if exists
-
-            socket = io(ACTIVE_SERVER_URL, {
-                transports: ['websocket', 'polling'], reconnectionAttempts: 5,
-                auth: { token: authToken } // Send token for auth
-            });
-
+            if (socket) { socket.disconnect(); } 
+            socket = io(ACTIVE_SERVER_URL, { transports: ['websocket', 'polling'], reconnectionAttempts: 5, auth: { token: authToken } });
             // --- Socket Event Handlers ---
-            socket.on('connect', () => {
-                console.log('DEBUG: Socket connected and authenticated. ID:', socket.id);
-                 if(connectionStatusEl) { connectionStatusEl.textContent = 'Online'; connectionStatusEl.classList.add('connected'); connectionStatusEl.classList.remove('disconnected', 'error'); }
-                 addSystemMessage('Connected to chat.', 'global'); // Add to global context
-                 // Username already set from login, view already shown by handleLogin/initial load
-                 socket.emit('request_user_list'); // Request user list on connect
-            });
-
-            socket.on('connect_error', (err) => {
-                 console.error(`DEBUG: Socket Connection/Auth Error:`, err.message);
-                 if (err.message.toLowerCase().includes('authentication error')) {
-                      addSystemMessage(`Authentication failed: ${err.message}. Logging out.`, 'global');
-                      handleLogout(); // Force logout if token is bad
-                 } else {
-                      addSystemMessage(`Connection Error: ${err.message}. Retrying...`, 'global');
-                      if(connectionStatusEl) { connectionStatusEl.textContent = 'Error'; connectionStatusEl.classList.add('error'); connectionStatusEl.classList.remove('connected', 'disconnected'); }
-                      // Let socket.io handle reconnect attempts
-                 }
-            });
-
-            socket.on('disconnect', (reason) => {
-                 console.log(`DEBUG: Socket disconnected. Reason: ${reason}`);
-                 addSystemMessage(`Disconnected: ${reason}. Attempting reconnect...`, 'global');
-                 if(connectionStatusEl) { connectionStatusEl.textContent = 'Offline'; connectionStatusEl.classList.add('disconnected'); connectionStatusEl.classList.remove('connected', 'error'); }
-                 // Keep username/token, wait for reconnect attempt unless explicit logout
-            });
-
+            socket.on('connect', () => { console.log('DEBUG: Socket connected and authenticated. ID:', socket.id); if(connectionStatusEl) { connectionStatusEl.textContent = 'Online'; connectionStatusEl.classList.add('connected'); connectionStatusEl.classList.remove('disconnected', 'error'); } addSystemMessage('Connected to chat.', 'global'); showChatView(); socket.emit('request_user_list'); });
+            socket.on('connect_error', (err) => { console.error(`DEBUG: Socket Connection/Auth Error:`, err.message); if (err.message.toLowerCase().includes('authentication error')) { addSystemMessage(`Authentication failed: ${err.message}. Logging out.`, 'global'); handleLogout(); } else { addSystemMessage(`Connection Error: ${err.message}. Retrying...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Error'; connectionStatusEl.classList.add('error'); connectionStatusEl.classList.remove('connected', 'disconnected'); } } });
+            socket.on('disconnect', (reason) => { console.log(`DEBUG: Socket disconnected. Reason: ${reason}`); addSystemMessage(`Disconnected: ${reason}. Reconnecting...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Offline'; connectionStatusEl.classList.add('disconnected'); connectionStatusEl.classList.remove('connected', 'error'); } });
             socket.on('receive_message', handleGlobalMessage);
             socket.on('receive_private_message', handlePrivateMessage);
             socket.on('private_message_failed', handlePrivateMessageFailure);
@@ -410,206 +353,32 @@
             socket.on('user_connected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has joined.`, 'global'); });
             socket.on('user_disconnected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has left.`, 'global'); });
             socket.on('general_error', (errorMessage) => { addSystemMessage(`Server Error: ${errorMessage}`, 'global'); });
-
         } // End connectToServer
 
-
-        // --- Specific Event Handlers (handleGlobalMessage, handlePrivateMessage, etc) ---
-        // These remain mostly the same as the previous integrated version, ensuring they use
-        // the correct container logic via displayChatMessage / addSystemMessage
+        // --- Specific Event Handlers ---
         function handleGlobalMessage(messageData) { /* ... same ... */ }
-        function handleGlobalMessage(messageData) {
-            console.log("DEBUG: Received global message:", messageData);
-            // Display global message if it's not your own echo
-            if (!socket || !messageData.socketId || (messageData.socketId !== socket.id)) {
-                 displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId, false, null, 'global'); 
-            }
-        }
         function handlePrivateMessage(messageData) { /* ... same ... */ }
-         function handlePrivateMessage(messageData) {
-            console.log("DEBUG: Received private message data:", messageData);
-            let participant = ""; let isOwn = false;
-            if (messageData.type === 'sent') { participant = messageData.recipientUsername; isOwn = true; } 
-            else if (messageData.type === 'received') { participant = messageData.senderUsername; isOwn = false; } 
-            else { return; }
-
-            const conversationId = openOrCreatePMConversation(participant); // Ensures UI exists
-            displayChatMessage(messageData.text, isOwn ? myUsername : participant, messageData.timestamp, isOwn ? socket.id : null, true, messageData.type, participant); // Display in correct container
-
-            if (!isOwn && conversationId !== activeConversationId) { // Unread indicator
-                const conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`);
-                if (conversationTab) { conversationTab.classList.add('has-unread'); }
-            }
-        }
         function handlePrivateMessageFailure(errorData) { /* ... same ... */ }
-        function handlePrivateMessageFailure(errorData) {
-             console.log("DEBUG: Private message failed:", errorData);
-             const message = `Failed to send PM to "${errorData.recipientUsername}". Reason: ${errorData.reason}`;
-             addSystemMessage(message, 'global'); // Show PM failure in global chat 
-        }
         function updateUserList(usernames) { /* ... same ... */ }
-         function updateUserList(usernames) {
-             console.log("DEBUG: Received user list update:", usernames);
-             if (!userList) return;
-             const onlineUsers = usernames.filter(u => u !== null && u !== undefined); 
-             userList.innerHTML = ''; 
-             onlineUsers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-             onlineUsers.forEach(username => {
-                 const li = document.createElement('li');
-                 li.textContent = username;
-                 li.dataset.username = username;
-                  if (username === myUsername) {
-                      li.classList.add('is-me');
-                      li.textContent += " (You)";
-                  } else {
-                      li.addEventListener('click', () => openOrCreatePMConversation(username));
-                  }
-                 userList.appendChild(li);
-             });
-        }
+        function handleGlobalMessage(messageData) { console.log("DEBUG: Received global message:", messageData); if (!socket || !messageData.socketId || (messageData.socketId !== socket.id)) { displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId, false, null, 'global'); } }
+        function handlePrivateMessage(messageData) { console.log("DEBUG: Received private message data:", messageData); let participant = ""; let isOwn = false; if (messageData.type === 'sent') { participant = messageData.recipientUsername; isOwn = true; } else if (messageData.type === 'received') { participant = messageData.senderUsername; isOwn = false; } else { return; } const conversationId = openOrCreatePMConversation(participant); displayChatMessage(messageData.text, isOwn ? myUsername : participant, messageData.timestamp, isOwn ? socket.id : null, true, messageData.type, participant); if (!isOwn && conversationId !== activeConversationId) { const conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`); if (conversationTab) { conversationTab.classList.add('has-unread'); } } }
+        function handlePrivateMessageFailure(errorData) { console.log("DEBUG: Private message failed:", errorData); const message = `Failed to send PM to "${errorData.recipientUsername}". Reason: ${errorData.reason}`; addSystemMessage(message, 'global'); }
+        function updateUserList(usernames) { console.log("DEBUG: Received user list update:", usernames); if (!userList) return; const onlineUsers = usernames.filter(u => u !== null && u !== undefined); userList.innerHTML = ''; onlineUsers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())); onlineUsers.forEach(username => { const li = document.createElement('li'); li.textContent = username; li.dataset.username = username; if (username === myUsername) { li.classList.add('is-me'); li.textContent += " (You)"; } else { li.addEventListener('click', () => openOrCreatePMConversation(username)); } userList.appendChild(li); }); }
 
 
         // --- UI Interaction Functions ---
         function openOrCreatePMConversation(username) { /* ... same ... */ }
-        function openOrCreatePMConversation(username) {
-            if (!username || username === myUsername) return null; 
-            console.log(`DEBUG: Opening/creating PM conversation with ${username}`);
-            const conversationId = `pm_${username}`;
-
-            let conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`);
-            if (!conversationTab && conversationList) { 
-                conversationTab = document.createElement('li');
-                conversationTab.textContent = username;
-                conversationTab.dataset.conversationId = conversationId;
-                const unreadIndicator = document.createElement('span'); unreadIndicator.classList.add('unread-indicator'); conversationTab.appendChild(unreadIndicator);
-                conversationTab.addEventListener('click', () => switchConversation(conversationId));
-                conversationList.appendChild(conversationTab);
-            }
-
-            if (!pmMessageContainers[username] && chatContent) { 
-                 const pmContainer = document.createElement('div');
-                 pmContainer.id = `messagesContainer_${conversationId}`;
-                 pmContainer.classList.add('messages-container');
-                 const pmHeader = document.createElement('p'); pmHeader.classList.add('system-message'); pmHeader.textContent = `Private Chat with ${username}`; pmHeader.style.fontWeight = 'bold'; pmContainer.appendChild(pmHeader);
-                 chatContent.appendChild(pmContainer);
-                 pmMessageContainers[username] = pmContainer;
-            }
-            
-            // Don't automatically switch, just ensure UI exists
-            // switchConversation(conversationId); // Removed auto-switch on creation
-
-            return conversationId; 
-        }
-
         function switchConversation(conversationId) { /* ... same ... */ }
-        function switchConversation(conversationId) {
-            console.log(`DEBUG: Switching conversation to ${conversationId}`);
-            if (activeConversationId === conversationId && document.querySelector(`#messagesContainer_${conversationId}.active-chat`)) return; // Added check if already visibly active
-
-            activeConversationId = conversationId;
-
-            document.querySelectorAll('#conversationList li').forEach(li => {
-                const isActive = li.dataset.conversationId === conversationId;
-                li.classList.toggle('active', isActive);
-                 if (isActive) { li.classList.remove('has-unread'); }
-            });
-
-            document.querySelectorAll('.chat-content .messages-container').forEach(container => {
-                 const isActive = container.id === `messagesContainer_${conversationId}`;
-                 container.classList.toggle('active-chat', isActive);
-                 if (isActive) { container.scrollTop = container.scrollHeight; }
-            });
-
-            if (!messageInput) return;
-            if (conversationId === 'global') { messageInput.placeholder = "Type message or /msg user message"; } 
-            else { const targetUser = conversationId.replace('pm_', ''); messageInput.placeholder = `Private message to ${targetUser}...`; }
-            messageInput.focus();
-        }
-
-        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... same timestamp formatting logic ... */ }
-        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) {
-             const targetConversationId = isPM ? `pm_${(pmType === 'sent' ? otherParty : senderUsername)}` : 'global';
-             const targetContainer = document.getElementById(`messagesContainer_${targetConversationId}`);
-
-             let formattedTime = '';
-             try { const date = new Date(timestampISO); if (!isNaN(date.getTime())) { formattedTime = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }); } else { formattedTime = "??:??"; } } catch (e) { console.error("Error formatting date:", timestampISO, e); formattedTime = "??:??"; }
-
-             if (!targetContainer) {
-                 if (isPM && pmType === 'received') {
-                     console.log("DEBUG: Received PM for inactive conversation, creating UI for:", senderUsername);
-                     const newConvId = openOrCreatePMConversation(senderUsername); 
-                     const newTargetContainer = document.getElementById(`messagesContainer_${newConvId}`);
-                      if (!newTargetContainer) { console.error(`DEBUG: Failed to find/create container for PM with ${senderUsername}`); return; }
-                      appendMessageToContainer(newTargetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty);
-                 } else { console.warn(`DEBUG: messagesContainer not found for ID: messagesContainer_${targetConversationId}`); return; }
-             } else { appendMessageToContainer(targetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty); }
-        }
-
-        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { /* ... same logic ... */ }
-        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) {
-             const isOwnMessage = (socket && messageSocketId === socket.id && myUsername);
-             const messageClass = isOwnMessage ? 'sent' : 'received';
-             const messageDiv = document.createElement('div'); messageDiv.classList.add('message', messageClass);
-             const bubbleDiv = document.createElement('div'); bubbleDiv.classList.add('message-bubble');
-             let metaPrefix = "";
-             if (isPM) { bubbleDiv.classList.add(pmType === 'sent' ? 'pm-sent' : 'pm-received'); metaPrefix = pmType === 'sent' ? `(PM to ${otherParty}) ` : `(PM from ${senderUsername}) `; }
-             const textP = document.createElement('p'); textP.classList.add('message-text'); textP.textContent = text;
-             const metaSpan = document.createElement('span'); metaSpan.classList.add('message-meta');
-             const metaUsername = isOwnMessage ? 'You' : senderUsername; metaSpan.textContent = `${metaPrefix}${metaUsername} • ${formattedTimestamp}`; 
-             bubbleDiv.appendChild(textP); bubbleDiv.appendChild(metaSpan); messageDiv.appendChild(bubbleDiv); containerElement.appendChild(messageDiv);
-             if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], translateY: [15, 0], scale: [0.95, 1], duration: 450, easing: 'easeOutExpo' }); }
-             if ('scrollBehavior' in document.documentElement.style) { containerElement.scrollTo({ top: containerElement.scrollHeight, behavior: 'smooth' }); } else { containerElement.scrollTop = containerElement.scrollHeight; }
-        }
-
-
-        function addSystemMessage(text, targetId = null) { /* ... same logic ... */ }
-        function addSystemMessage(text, targetId = null) {
-            let targetContainer;
-            if (targetId) { targetContainer = document.getElementById(`messagesContainer_${targetId}`); } 
-            else { targetContainer = document.querySelector('.chat-content .messages-container.active-chat'); }
-            if (!targetContainer) targetContainer = document.getElementById('messagesContainer_global');
-            if (!targetContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; }
-            const messageDiv = document.createElement('div'); messageDiv.classList.add('system-message'); messageDiv.textContent = text; targetContainer.appendChild(messageDiv);
-            targetContainer.scrollTop = targetContainer.scrollHeight;
-            if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], duration: 400, easing: 'easeOutQuad' }); }
-        }
-
-
-        function handleSendMessageToServer() { /* ... same logic as previous integrated version ... */ }
-        function handleSendMessageToServer() {
-             if (!messageInput || !sendMessageBtn) return;
-             const messageText = messageInput.value.trim(); 
-             if (!messageText) return;
-             if (!socket || !socket.connected) { addSystemMessage("Cannot send: Not connected."); return; }
-             if (!myUsername) { addSystemMessage("Cannot send: Username not set."); showAuthView('login'); return; } // Show login if no username
-
-             const pmMatch = messageText.match(/^\/msg\s+([a-zA-Z0-9_]{3,15})\s+(.+)/);
-
-             if (pmMatch) { /* ... same explicit PM logic ... */ }
-             else if (activeConversationId === 'global') { /* ... same global message logic ... */ }
-             else if (activeConversationId.startsWith('pm_')) { /* ... same implicit PM logic ... */ }
-             else { /* ... same error handling ... */ }
-            
-             if (pmMatch) {
-                 const recipientUsername = pmMatch[1]; const pmText = pmMatch[2];
-                 if (recipientUsername.toLowerCase() === myUsername.toLowerCase()) { addSystemMessage("You cannot /msg yourself.", 'global'); return; }
-                 console.log(`DEBUG: Sending explicit PM to ${recipientUsername}: ${pmText}`);
-                 socket.emit('send_private_message', { recipientUsername: recipientUsername, text: pmText });
-                 openOrCreatePMConversation(recipientUsername); // Ensure UI exists
-             } else if (activeConversationId === 'global') {
-                 console.log(`DEBUG: Sending global message: ${messageText}`);
-                 const messageData = { text: messageText }; const now = new Date(); const timestamp = now.toISOString(); 
-                 displayChatMessage(messageText, myUsername, timestamp, socket.id, false, null, 'global'); // Optimistic global
-                 socket.emit('send_message', messageData);
-             } else if (activeConversationId.startsWith('pm_')) {
-                 const recipientUsername = activeConversationId.replace('pm_', '');
-                 console.log(`DEBUG: Sending implicit PM to ${recipientUsername}: ${messageText}`);
-                 socket.emit('send_private_message', { recipientUsername: recipientUsername, text: messageText });
-             } else { console.error("DEBUG: Unknown active conversation ID:", activeConversationId); addSystemMessage("Error: Cannot determine recipient.", 'global'); }
-
-
-             messageInput.value = ''; messageInput.style.height = 'auto'; messageInput.focus();
-        }
+        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... same ... */ }
+        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { /* ... same ... */ }
+        function addSystemMessage(text, targetId = null) { /* ... same ... */ }
+        function handleSendMessageToServer() { /* ... same ... */ }
+        function openOrCreatePMConversation(username) { if (!username || username === myUsername) return null; console.log(`DEBUG: Opening/creating PM conversation with ${username}`); const conversationId = `pm_${username}`; let conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`); if (!conversationTab && conversationList) { conversationTab = document.createElement('li'); conversationTab.textContent = username; conversationTab.dataset.conversationId = conversationId; const unreadIndicator = document.createElement('span'); unreadIndicator.classList.add('unread-indicator'); conversationTab.appendChild(unreadIndicator); conversationTab.addEventListener('click', () => switchConversation(conversationId)); conversationList.appendChild(conversationTab); } if (!pmMessageContainers[username] && chatContent) { const pmContainer = document.createElement('div'); pmContainer.id = `messagesContainer_${conversationId}`; pmContainer.classList.add('messages-container'); const pmHeader = document.createElement('p'); pmHeader.classList.add('system-message'); pmHeader.textContent = `Private Chat with ${username}`; pmHeader.style.fontWeight = 'bold'; pmContainer.appendChild(pmHeader); chatContent.appendChild(pmContainer); pmMessageContainers[username] = pmContainer; } return conversationId; }
+        function switchConversation(conversationId) { console.log(`DEBUG: Switching conversation to ${conversationId}`); if (activeConversationId === conversationId && document.querySelector(`#messagesContainer_${conversationId}.active-chat`)) return; activeConversationId = conversationId; document.querySelectorAll('#conversationList li').forEach(li => { const isActive = li.dataset.conversationId === conversationId; li.classList.toggle('active', isActive); if (isActive) { li.classList.remove('has-unread'); } }); document.querySelectorAll('.chat-content .messages-container').forEach(container => { const isActive = container.id === `messagesContainer_${conversationId}`; container.classList.toggle('active-chat', isActive); if (isActive) { container.scrollTop = container.scrollHeight; } }); if (!messageInput) return; if (conversationId === 'global') { messageInput.placeholder = "Type message or /msg user message"; } else { const targetUser = conversationId.replace('pm_', ''); messageInput.placeholder = `Private message to ${targetUser}...`; } messageInput.focus(); }
+        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { const targetConversationId = isPM ? `pm_${(pmType === 'sent' ? otherParty : senderUsername)}` : 'global'; const targetContainer = document.getElementById(`messagesContainer_${targetConversationId}`); let formattedTime = ''; try { const date = new Date(timestampISO); if (!isNaN(date.getTime())) { formattedTime = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }); } else { formattedTime = "??:??"; } } catch (e) { console.error("Error formatting date:", timestampISO, e); formattedTime = "??:??"; } if (!targetContainer) { if (isPM && pmType === 'received') { console.log("DEBUG: Received PM for inactive conversation, creating UI for:", senderUsername); const newConvId = openOrCreatePMConversation(senderUsername); const newTargetContainer = document.getElementById(`messagesContainer_${newConvId}`); if (!newTargetContainer) { console.error(`DEBUG: Failed to find/create container for PM with ${senderUsername}`); return; } appendMessageToContainer(newTargetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty); } else { console.warn(`DEBUG: messagesContainer not found for ID: messagesContainer_${targetConversationId}`); return; } } else { appendMessageToContainer(targetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty); } }
+        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { const isOwnMessage = (socket && messageSocketId === socket.id && myUsername); const messageClass = isOwnMessage ? 'sent' : 'received'; const messageDiv = document.createElement('div'); messageDiv.classList.add('message', messageClass); const bubbleDiv = document.createElement('div'); bubbleDiv.classList.add('message-bubble'); let metaPrefix = ""; if (isPM) { bubbleDiv.classList.add(pmType === 'sent' ? 'pm-sent' : 'pm-received'); metaPrefix = pmType === 'sent' ? `(PM to ${otherParty}) ` : `(PM from ${senderUsername}) `; } const textP = document.createElement('p'); textP.classList.add('message-text'); textP.textContent = text; const metaSpan = document.createElement('span'); metaSpan.classList.add('message-meta'); const metaUsername = isOwnMessage ? 'You' : senderUsername; metaSpan.textContent = `${metaPrefix}${metaUsername} • ${formattedTimestamp}`; bubbleDiv.appendChild(textP); bubbleDiv.appendChild(metaSpan); messageDiv.appendChild(bubbleDiv); containerElement.appendChild(messageDiv); if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], translateY: [15, 0], scale: [0.95, 1], duration: 450, easing: 'easeOutExpo' }); } if ('scrollBehavior' in document.documentElement.style) { containerElement.scrollTo({ top: containerElement.scrollHeight, behavior: 'smooth' }); } else { containerElement.scrollTop = containerElement.scrollHeight; } }
+        function addSystemMessage(text, targetId = null) { let targetContainer; if (targetId) { targetContainer = document.getElementById(`messagesContainer_${targetId}`); } else { targetContainer = document.querySelector('.chat-content .messages-container.active-chat'); } if (!targetContainer) targetContainer = document.getElementById('messagesContainer_global'); if (!targetContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; } const messageDiv = document.createElement('div'); messageDiv.classList.add('system-message'); messageDiv.textContent = text; targetContainer.appendChild(messageDiv); targetContainer.scrollTop = targetContainer.scrollHeight; if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], duration: 400, easing: 'easeOutQuad' }); } }
+        function handleSendMessageToServer() { if (!messageInput || !sendMessageBtn) return; const messageText = messageInput.value.trim(); if (!messageText) return; if (!socket || !socket.connected) { addSystemMessage("Cannot send: Not connected."); return; } if (!myUsername) { addSystemMessage("Cannot send: Username not set."); showAuthView('login'); return; } const pmMatch = messageText.match(/^\/msg\s+([a-zA-Z0-9_]{3,15})\s+(.+)/); if (pmMatch) { const recipientUsername = pmMatch[1]; const pmText = pmMatch[2]; if (recipientUsername.toLowerCase() === myUsername.toLowerCase()) { addSystemMessage("You cannot /msg yourself.", 'global'); return; } console.log(`DEBUG: Sending explicit PM to ${recipientUsername}: ${pmText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: pmText }); openOrCreatePMConversation(recipientUsername); } else if (activeConversationId === 'global') { console.log(`DEBUG: Sending global message: ${messageText}`); const messageData = { text: messageText }; const now = new Date(); const timestamp = now.toISOString(); displayChatMessage(messageText, myUsername, timestamp, socket.id, false, null, 'global'); socket.emit('send_message', messageData); } else if (activeConversationId.startsWith('pm_')) { const recipientUsername = activeConversationId.replace('pm_', ''); console.log(`DEBUG: Sending implicit PM to ${recipientUsername}: ${messageText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: messageText }); } else { console.error("DEBUG: Unknown active conversation ID:", activeConversationId); addSystemMessage("Error: Cannot determine recipient.", 'global'); } messageInput.value = ''; messageInput.style.height = 'auto'; messageInput.focus(); }
 
 
         // --- Event Listeners for UI ---
@@ -629,10 +398,10 @@
             applyTheme(currentTheme);
             if (authToken) {
                 console.log("DEBUG: Found existing token. Validating connection...");
-                myUsername = localStorage.getItem('username'); // Restore username optimistically
+                myUsername = localStorage.getItem('username'); 
                 if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`;
                 showChatView(); // Show chat view optimistically
-                connectToServer(); // Attempt connection, connect_error will handle invalid token
+                connectToServer(); 
             } else {
                 console.log("DEBUG: No token found. Showing auth view.");
                 showAuthView('login'); // Show login if no token
