@@ -1,0 +1,464 @@
+<!-- electron-chat-app/index.html or www/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Messenger</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- 
+        Socket.IO Client Library:
+        - For Web Client (deployed to Render static site): Use CDN
+          <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        - For Electron App (packaged): Load locally for offline reliability
+          1. Ensure `socket.io-client` is in "dependencies": `npm install socket.io-client --save-prod`
+          2. Create a 'libs' folder in your project root (e.g., electron-chat-app/libs).
+          3. Copy `node_modules/socket.io-client/dist/socket.io.js` into that 'libs' folder.
+          4. Use: <script src="./libs/socket.io.js"></script> 
+        - For Capacitor Android App (if packaging web assets): CDN is fine, or local path if assets are bundled.
+    -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script> <!-- Defaulting to CDN for this example -->
+    <style>
+        /* ... (Your existing CSS styles remain unchanged here - I'm assuming it's the same as what you provided) ... */
+         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        :root {
+            --font-primary: 'Roboto', sans-serif;
+            --font-display: 'Orbitron', sans-serif;
+            --bg-color-light: #e8eff5; --text-color-light: #121c26; --primary-accent-light: #007bff; --secondary-accent-light: #0056b3; --ui-bg-light: #ffffff; --ui-border-light: #d1d9e0; --msg-sent-bg-light: #007bff; --msg-sent-text-light: #ffffff; --msg-received-bg-light: #f0f2f5; --msg-received-text-light: #121c26; --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08); --input-bg-light: #fff; --placeholder-color-light: #888;
+            --bg-color-dark: #0d1117; --text-color-dark: #c9d1d9; --primary-accent-dark: #58a6ff; --secondary-accent-dark: #1f6feb; --ui-bg-dark: #161b22; --ui-border-dark: #30363d; --msg-sent-bg-dark: #238636; --msg-sent-text-dark: #ffffff; --msg-received-bg-dark: #21262d; --msg-received-text-dark: #c9d1d9; --shadow-dark: 0 4px 15px rgba(0, 180, 255, 0.1); --input-bg-dark: #0d1117; --placeholder-color-dark: #666;
+            --bg-color: var(--bg-color-light); --text-color: var(--text-color-light); --primary-accent: var(--primary-accent-light); --secondary-accent: var(--secondary-accent-light); --ui-bg: var(--ui-bg-light); --ui-border: var(--ui-border-light); --msg-sent-bg: var(--msg-sent-bg-light); --msg-sent-text: var(--msg-sent-text-light); --msg-received-bg: var(--msg-received-bg-light); --msg-received-text: var(--msg-received-text-light); --shadow: var(--shadow-light); --input-bg: var(--input-bg-light); --placeholder-color: var(--placeholder-color-light);
+            --transition-speed: 0.3s;
+        }
+        body.dark-mode {
+            --bg-color: var(--bg-color-dark); --text-color: var(--text-color-dark); --primary-accent: var(--primary-accent-dark); --secondary-accent: var(--secondary-accent-dark); --ui-bg: var(--ui-bg-dark); --ui-border: var(--ui-border-dark); --msg-sent-bg: var(--msg-sent-bg-dark); --msg-sent-text: var(--msg-sent-text-dark); --msg-received-bg: var(--msg-received-bg-dark); --msg-received-text: var(--msg-received-text-dark); --shadow: var(--shadow-dark); --input-bg: var(--input-bg-dark); --placeholder-color: var(--placeholder-color-dark);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-primary); background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease; }
+        .app-container { width: 95vw; max-width: 450px; height: 90vh; max-height: 700px; background-color: var(--ui-bg); border-radius: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--ui-border); transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease; }
+        .chat-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); transition: border-color var(--transition-speed) ease; }
+        .chat-header h1 { font-family: var(--font-display); font-size: 1.4em; color: var(--primary-accent); transition: color var(--transition-speed) ease; letter-spacing: 1px; }
+        .chat-header .connection-status { font-size: 0.7em; padding: 3px 8px; border-radius: 5px; }
+        .chat-header .connection-status.connected { background-color: #28a745; color: white; }
+        .chat-header .connection-status.disconnected { background-color: #dc3545; color: white; }
+        .chat-header .connection-status.error { background-color: #ffc107; color: black; } /* For connection error status */
+        .theme-switcher { display: flex; align-items: center; cursor: pointer; }
+        .switch-track { width: 50px; height: 26px; background-color: var(--ui-border); border-radius: 13px; position: relative; transition: background-color var(--transition-speed) ease; }
+        .switch-thumb { width: 20px; height: 20px; background-color: var(--bg-color-light); border-radius: 50%; position: absolute; top: 3px; left: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        body.dark-mode .switch-thumb { background-color: var(--text-color-dark); }
+        .messages-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scrollbar-width: thin; scrollbar-color: var(--primary-accent) var(--ui-bg); }
+        .messages-container::-webkit-scrollbar { width: 8px; }
+        .messages-container::-webkit-scrollbar-track { background: var(--ui-bg); border-radius: 4px; }
+        .messages-container::-webkit-scrollbar-thumb { background-color: var(--primary-accent); border-radius: 4px; border: 2px solid var(--ui-bg); }
+        .message, .system-message { display: flex; max-width: 80%; }
+        .system-message { align-self: center; max-width: 100%; font-style: italic; font-size: 0.85em; color: var(--text-color); opacity: 0.7; padding: 5px 0; text-align: center;}
+        .message-bubble { padding: 10px 15px; border-radius: 18px; line-height: 1.5; font-size: 0.95em; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .message-text { margin-bottom: 4px; }
+        .message-meta { font-size: 0.7em; opacity: 0.7; text-align: right; }
+        .message.sent { align-self: flex-end; }
+        .message.sent .message-bubble { background-color: var(--msg-sent-bg); color: var(--msg-sent-text); border-bottom-right-radius: 5px; transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease; }
+        .message.received { align-self: flex-start; }
+        .message.received .message-bubble { background-color: var(--msg-received-bg); color: var(--msg-received-text); border-bottom-left-radius: 5px; transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease; }
+        
+        /* Username Input Area Styles */
+        .username-input-container {
+            padding: 20px;
+            border-bottom: 1px solid var(--ui-border);
+            background-color: var(--ui-bg);
+            display: flex; 
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .username-input-container p#usernamePromptMessage {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .username-input-container input[type="text"] {
+            width: 80%;
+            max-width: 300px;
+            padding: 12px 15px;
+            border: 1px solid var(--ui-border);
+            border-radius: 20px;
+            font-family: var(--font-primary);
+            font-size: 0.95em;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            text-align: center;
+        }
+        .username-input-container button {
+            width: 80%;
+            max-width: 300px;
+            padding: 12px 15px;
+            background-color: var(--primary-accent);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: var(--font-primary);
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .username-input-container button:hover {
+            background-color: var(--secondary-accent);
+        }
+        .username-input-container .error-message {
+            color: #dc3545; /* Red for errors */
+            font-size: 0.8em;
+            min-height: 1.2em; /* Prevent layout shift */
+            text-align: center;
+        }
+
+        .message-input-area {
+            display: flex; 
+            padding: 15px;
+            border-top: 1px solid var(--ui-border);
+            background-color: var(--ui-bg);
+            transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+        }
+        .message-input-area textarea { flex-grow: 1; padding: 12px 15px; border: 1px solid var(--ui-border); border-radius: 20px; resize: none; font-family: var(--font-primary); font-size: 0.95em; background-color: var(--input-bg); color: var(--text-color); transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease, color var(--transition-speed) ease; margin-right: 10px; min-height: 48px; max-height: 100px; overflow-y: auto; }
+        .message-input-area textarea::placeholder { color: var(--placeholder-color); transition: color var(--transition-speed) ease; }
+        .message-input-area textarea:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-accent-dark_alpha, rgba(88, 166, 255, 0.3)); }
+        body.dark-mode .message-input-area textarea:focus { box-shadow: 0 0 0 3px var(--primary-accent-light_alpha, rgba(0, 123, 255, 0.3)); }
+        .message-input-area button { padding: 0 20px; background-color: var(--primary-accent); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: var(--font-primary); font-weight: bold; font-size: 0.95em; transition: background-color var(--transition-speed) ease, transform 0.1s ease; display: flex; align-items: center; justify-content: center; }
+        .message-input-area button:hover { background-color: var(--secondary-accent); }
+        .message-input-area button:active { transform: scale(0.95); }
+        .message-input-area button svg { width: 18px; height: 18px; fill: white; }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="chat-header">
+            <h1 id="windowTitle">Messenger</h1>
+            <span id="connectionStatus" class="connection-status disconnected">Offline</span>
+            <div class="theme-switcher" id="themeSwitcher">
+                <div class="switch-track">
+                    <div class="switch-thumb" id="switchThumb"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            <!-- System messages will appear here first -->
+        </div>
+
+        <!-- Username Input Area -->
+        <div class="username-input-container" id="usernameInputContainer">
+            <p id="usernamePromptMessage">Set your username to join the chat:</p>
+            <input type="text" id="usernameInput" placeholder="Username (3-15 chars)">
+            <button id="setUsernameBtn">Join Chat</button>
+            <p id="usernameErrorDisplay" class="error-message"></p>
+        </div>
+
+        <!-- Message Input Area (initially hidden by JS) -->
+        <div class="message-input-area" id="chatInputArea">
+            <textarea id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+            <button id="sendMessageBtn">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const themeSwitcher = document.getElementById('themeSwitcher');
+        const switchThumb = document.getElementById('switchThumb');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const windowTitle = document.getElementById('windowTitle');
+        const connectionStatusEl = document.getElementById('connectionStatus');
+
+        const usernameInputContainer = document.getElementById('usernameInputContainer');
+        const usernameInput = document.getElementById('usernameInput');
+        const setUsernameBtn = document.getElementById('setUsernameBtn');
+        const usernameErrorDisplay = document.getElementById('usernameErrorDisplay');
+        const usernamePromptMessage = document.getElementById('usernamePromptMessage');
+
+        const chatInputArea = document.getElementById('chatInputArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+
+
+        // --- Theme Switcher Logic ---
+        let currentTheme = localStorage.getItem('app-theme') || 'light';
+        function applyTheme(theme) {
+            document.body.classList.toggle('dark-mode', theme === 'dark');
+            if (typeof anime === 'function') {
+                anime({
+                    targets: switchThumb,
+                    translateX: theme === 'dark' ? (50 - 20 - 6) : 0,
+                    duration: 300,
+                    easing: 'easeInOutExpo'
+                });
+            }
+        }
+        if (themeSwitcher) {
+            themeSwitcher.addEventListener('click', () => {
+                currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+                localStorage.setItem('app-theme', currentTheme);
+                applyTheme(currentTheme);
+            });
+        }
+        
+
+        // --- Socket.IO Connection & Logic ---
+        const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com';
+        // const ACTIVE_SERVER_URL = 'http://localhost:3000'; 
+
+        let socket;
+        let myUsername = null;
+
+        function showUsernameInput() {
+            console.log("DEBUG: showUsernameInput called");
+            if (usernameInputContainer) usernameInputContainer.style.display = 'flex';
+            if (chatInputArea) chatInputArea.style.display = 'none';
+            if (usernameInput) usernameInput.focus();
+            if (usernameErrorDisplay) usernameErrorDisplay.textContent = '';
+        }
+
+        function showChatInput() {
+            console.log("DEBUG: showChatInput called");
+            if (usernameInputContainer) usernameInputContainer.style.display = 'none';
+            if (chatInputArea) chatInputArea.style.display = 'flex';
+            if (messageInput) messageInput.focus();
+        }
+
+        function connectToServer() {
+            if (socket && socket.connected) {
+                console.log('DEBUG: Already connected or attempting.');
+                if (myUsername) {
+                    showChatInput();
+                } else {
+                    showUsernameInput();
+                    addSystemMessage('Connected! Please set your username.');
+                }
+                return;
+            }
+
+            console.log(`DEBUG: Attempting to connect to: ${ACTIVE_SERVER_URL}`);
+            addSystemMessage(`Connecting to server at ${ACTIVE_SERVER_URL}...`);
+            if(connectionStatusEl) {
+                connectionStatusEl.textContent = 'Connecting...';
+                connectionStatusEl.classList.remove('connected', 'disconnected', 'error');
+            }
+            showUsernameInput(); 
+
+            socket = io(ACTIVE_SERVER_URL, {
+                transports: ['websocket', 'polling'],
+                reconnectionAttempts: 5
+            });
+
+            socket.on('connect', () => {
+                console.log('DEBUG: Socket connected. ID:', socket.id);
+                if(connectionStatusEl) {
+                    connectionStatusEl.textContent = 'Online';
+                    connectionStatusEl.classList.add('connected');
+                    connectionStatusEl.classList.remove('disconnected', 'error');
+                }
+                addSystemMessage('Connected! Please set your username.');
+                showUsernameInput(); 
+                if (usernamePromptMessage) usernamePromptMessage.textContent = "Set your username to join the chat:";
+            });
+
+            socket.on('username_accepted', (username) => {
+                console.log(`DEBUG: Username accepted: ${username}`);
+                myUsername = username;
+                if (windowTitle) windowTitle.textContent = `Chat (${myUsername})`;
+                addSystemMessage(`Username set to: ${myUsername}. Welcome!`);
+                showChatInput();
+            });
+
+            socket.on('username_error', (errorMessage) => {
+                console.log(`DEBUG: Username error: ${errorMessage}`);
+                if (usernameErrorDisplay) usernameErrorDisplay.textContent = errorMessage;
+                addSystemMessage(`Username Error: ${errorMessage}`);
+                if (usernameInput) usernameInput.focus();
+            });
+
+            socket.on('receive_message', (messageData) => {
+                console.log("DEBUG: Received message:", messageData);
+                if (!socket || messageData.socketId !== socket.id || !myUsername) { // Check if socket exists
+                    displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId);
+                }
+            });
+
+            socket.on('user_connected', (username) => {
+                console.log(`DEBUG: User connected: ${username}`);
+                addSystemMessage(`${username} has joined the chat.`);
+            });
+
+            socket.on('user_disconnected', (username) => {
+                console.log(`DEBUG: User disconnected: ${username}`);
+                addSystemMessage(`${username} has left the chat.`);
+            });
+            
+            socket.on('general_error', (errorMessage) => {
+                console.log(`DEBUG: General server error: ${errorMessage}`);
+                addSystemMessage(`Server Error: ${errorMessage}`);
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log(`DEBUG: Socket disconnected. Reason: ${reason}`);
+                addSystemMessage(`Disconnected: ${reason}. Attempting to reconnect...`);
+                if(connectionStatusEl) {
+                    connectionStatusEl.textContent = 'Offline';
+                    connectionStatusEl.classList.add('disconnected');
+                    connectionStatusEl.classList.remove('connected', 'error');
+                }
+                myUsername = null;
+                if (windowTitle) windowTitle.textContent = `Chat (Offline)`;
+                showUsernameInput();
+                if (usernamePromptMessage) usernamePromptMessage.textContent = "Disconnected. Reconnecting...";
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error(`DEBUG: Connection Error to ${ACTIVE_SERVER_URL}:`, err.message);
+                addSystemMessage(`Connection Error: ${err.message}. Could not connect.`);
+                if(connectionStatusEl) {
+                    connectionStatusEl.textContent = 'Error';
+                    connectionStatusEl.classList.add('error');
+                    connectionStatusEl.classList.remove('connected', 'disconnected');
+                }
+                showUsernameInput();
+                if (usernamePromptMessage) usernamePromptMessage.textContent = "Connection failed. Retrying...";
+            });
+        }
+
+        function handleSetUsername() {
+            console.log("DEBUG: handleSetUsername function entered.");
+            if (!usernameInput) {
+                console.error("DEBUG: usernameInput element is null!");
+                return;
+            }
+            const desiredUsername = usernameInput.value.trim();
+            console.log(`DEBUG: Desired username from input: "${desiredUsername}"`);
+
+            if (!desiredUsername) {
+                if (usernameErrorDisplay) usernameErrorDisplay.textContent = 'Username cannot be empty.';
+                console.log("DEBUG: Username was empty.");
+                return;
+            }
+
+            if (!socket) {
+                console.error("DEBUG: Socket object is null/undefined. Cannot emit.");
+                addSystemMessage("Error: Not connected to server (socket not initialized). Please refresh.");
+                return;
+            }
+
+            console.log(`DEBUG: Socket connected status for emit: ${socket.connected}`);
+
+            if (socket.connected) {
+                if (usernameErrorDisplay) usernameErrorDisplay.textContent = ''; 
+                console.log(`DEBUG: Emitting 'set_username' with: "${desiredUsername}"`);
+                socket.emit('set_username', desiredUsername);
+            } else {
+                addSystemMessage("Cannot set username: Not connected to server. Please wait or check connection.");
+                console.log("DEBUG: Cannot emit 'set_username' because socket is not connected.");
+            }
+        }
+
+        function displayChatMessage(text, senderUsername, timestamp, messageSocketId) {
+            if (!messagesContainer) { console.warn("DEBUG: messagesContainer not found"); return; }
+            const messageDiv = document.createElement('div');
+            const messageClass = (socket && messageSocketId === socket.id && myUsername) ? 'sent' : 'received';
+            messageDiv.classList.add('message', messageClass);
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.classList.add('message-bubble');
+            const textP = document.createElement('p');
+            textP.classList.add('message-text');
+            textP.textContent = text;
+            const metaSpan = document.createElement('span');
+            metaSpan.classList.add('message-meta');
+            metaSpan.textContent = `${senderUsername || 'System'} • ${timestamp}`;
+            bubbleDiv.appendChild(textP);
+            bubbleDiv.appendChild(metaSpan);
+            messageDiv.appendChild(bubbleDiv);
+            messagesContainer.appendChild(messageDiv);
+
+            if (typeof anime === 'function') {
+                anime({ targets: messageDiv, opacity: [0, 1], translateY: [10, 0], duration: 300, easing: 'easeOutExpo' });
+            }
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            if (!messagesContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; }
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('system-message');
+            messageDiv.textContent = text;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            if (typeof anime === 'function') {
+                anime({ targets: messageDiv, opacity: [0, 1], duration: 300, easing: 'easeOutExpo' });
+            }
+        }
+
+        function handleSendMessageToServer() {
+            if (!messageInput || !sendMessageBtn) { console.warn("DEBUG: messageInput or sendMessageBtn not found"); return; }
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            if (!socket || !socket.connected) {
+                addSystemMessage("Cannot send: Not connected.");
+                return;
+            }
+            if (!myUsername) {
+                addSystemMessage("Cannot send: Username not set.");
+                showUsernameInput();
+                return;
+            }
+
+            const messageData = { text: text };
+            const now = new Date();
+            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            displayChatMessage(text, myUsername, timestamp, socket.id); 
+            socket.emit('send_message', messageData);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            messageInput.focus();
+        }
+
+        // --- Event Listeners for UI ---
+        // Ensure these are only added if the elements exist
+        if (setUsernameBtn) {
+            setUsernameBtn.addEventListener('click', handleSetUsername);
+        } else {
+            console.warn("DEBUG: setUsernameBtn not found.");
+        }
+        if (usernameInput) {
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSetUsername();
+                }
+            });
+        } else {
+            console.warn("DEBUG: usernameInput for keypress not found.");
+        }
+
+        if (sendMessageBtn && messageInput) {
+            sendMessageBtn.addEventListener('click', handleSendMessageToServer);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessageToServer();
+                }
+            });
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        } else {
+            console.warn("DEBUG: messageInput or sendMessageBtn for chat not found.");
+        }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(currentTheme); // Apply theme as soon as DOM is ready
+            showUsernameInput(); // Show username input area first
+            connectToServer();   // Then attempt to connect
+        });
+    </script>
+</body>
+</html>
