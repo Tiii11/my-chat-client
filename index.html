@@ -7,19 +7,19 @@
     <title>Socket.IO Messenger</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <!-- 
-        Socket.IO Client Library:
-        - For Web Client (deployed to Render static site): Use CDN
-          <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-        - For Electron App (packaged): Load locally for offline reliability
-          1. Ensure `socket.io-client` is in "dependencies": `npm install socket.io-client --save-prod`
-          2. Create a 'libs' folder in your project root (e.g., electron-chat-app/libs).
-          3. Copy `node_modules/socket.io-client/dist/socket.io.js` into that 'libs' folder.
-          4. Use: <script src="./libs/socket.io.js"></script> 
-        - For Capacitor Android App (if packaging web assets): CDN is fine, or local path if assets are bundled.
+        Socket.IO Client Library: Choose ONE based on your target platform
     -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script> <!-- Defaulting to CDN for this example -->
+    <!-- Option 1: CDN (For Web Client hosted online) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Option 2: Local File (For Packaged Electron App) -->
+    <!-- 
+        <script src="./libs/socket.io.js"></script> 
+        (Requires npm install socket.io-client --save-prod and copying the file)
+    -->
+    
     <style>
-        /* ... (Your existing CSS styles remain unchanged here - I'm assuming it's the same as what you provided) ... */
+        /* Your existing CSS styles go here - Paste the full CSS block from your previous version */
          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
 
         :root {
@@ -60,63 +60,23 @@
         .message.received { align-self: flex-start; }
         .message.received .message-bubble { background-color: var(--msg-received-bg); color: var(--msg-received-text); border-bottom-left-radius: 5px; transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease; }
         
-        /* Username Input Area Styles */
-        .username-input-container {
-            padding: 20px;
-            border-bottom: 1px solid var(--ui-border);
-            background-color: var(--ui-bg);
-            display: flex; 
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
-        .username-input-container p#usernamePromptMessage {
-            font-size: 0.9em;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        .username-input-container input[type="text"] {
-            width: 80%;
-            max-width: 300px;
-            padding: 12px 15px;
-            border: 1px solid var(--ui-border);
-            border-radius: 20px;
-            font-family: var(--font-primary);
-            font-size: 0.95em;
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            text-align: center;
-        }
-        .username-input-container button {
-            width: 80%;
-            max-width: 300px;
-            padding: 12px 15px;
-            background-color: var(--primary-accent);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-family: var(--font-primary);
-            font-weight: bold;
-            font-size: 0.95em;
-        }
-        .username-input-container button:hover {
-            background-color: var(--secondary-accent);
-        }
-        .username-input-container .error-message {
-            color: #dc3545; /* Red for errors */
-            font-size: 0.8em;
-            min-height: 1.2em; /* Prevent layout shift */
-            text-align: center;
-        }
+        /* Style for PMs (can be customized further) */
+        .message-bubble.pm-sent { background-color: var(--secondary-accent-light); border: 1px dashed var(--primary-accent-light); }
+        .message-bubble.pm-received { background-color: var(--ui-border-light); border: 1px dashed var(--text-color-light); }
+        body.dark-mode .message-bubble.pm-sent { background-color: var(--secondary-accent-dark); border: 1px dashed var(--primary-accent-dark); }
+        body.dark-mode .message-bubble.pm-received { background-color: var(--ui-border-dark); border: 1px dashed var(--text-color-dark); }
 
-        .message-input-area {
-            display: flex; 
-            padding: 15px;
-            border-top: 1px solid var(--ui-border);
-            background-color: var(--ui-bg);
-            transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease;
-        }
+
+        /* Username Input Area Styles */
+        .username-input-container { padding: 20px; border-bottom: 1px solid var(--ui-border); background-color: var(--ui-bg); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .username-input-container p#usernamePromptMessage { font-size: 0.9em; margin-bottom: 5px; text-align: center; }
+        .username-input-container input[type="text"] { width: 80%; max-width: 300px; padding: 12px 15px; border: 1px solid var(--ui-border); border-radius: 20px; font-family: var(--font-primary); font-size: 0.95em; background-color: var(--input-bg); color: var(--text-color); text-align: center; }
+        .username-input-container button { width: 80%; max-width: 300px; padding: 12px 15px; background-color: var(--primary-accent); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: var(--font-primary); font-weight: bold; font-size: 0.95em; }
+        .username-input-container button:hover { background-color: var(--secondary-accent); }
+        .username-input-container .error-message { color: #dc3545; font-size: 0.8em; min-height: 1.2em; text-align: center; }
+        
+        /* Message Input Area */
+        .message-input-area { display: flex; padding: 15px; border-top: 1px solid var(--ui-border); background-color: var(--ui-bg); transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease; }
         .message-input-area textarea { flex-grow: 1; padding: 12px 15px; border: 1px solid var(--ui-border); border-radius: 20px; resize: none; font-family: var(--font-primary); font-size: 0.95em; background-color: var(--input-bg); color: var(--text-color); transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease, color var(--transition-speed) ease; margin-right: 10px; min-height: 48px; max-height: 100px; overflow-y: auto; }
         .message-input-area textarea::placeholder { color: var(--placeholder-color); transition: color var(--transition-speed) ease; }
         .message-input-area textarea:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-accent-dark_alpha, rgba(88, 166, 255, 0.3)); }
@@ -125,7 +85,6 @@
         .message-input-area button:hover { background-color: var(--secondary-accent); }
         .message-input-area button:active { transform: scale(0.95); }
         .message-input-area button svg { width: 18px; height: 18px; fill: white; }
-
     </style>
 </head>
 <body>
@@ -141,7 +100,7 @@
         </div>
 
         <div class="messages-container" id="messagesContainer">
-            <!-- System messages will appear here first -->
+            <!-- Messages will appear here -->
         </div>
 
         <!-- Username Input Area -->
@@ -154,7 +113,7 @@
 
         <!-- Message Input Area (initially hidden by JS) -->
         <div class="message-input-area" id="chatInputArea">
-            <textarea id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+            <textarea id="messageInput" placeholder="Type message or /msg user message" rows="1"></textarea>
             <button id="sendMessageBtn">
                 <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
             </button>
@@ -168,29 +127,23 @@
         const messagesContainer = document.getElementById('messagesContainer');
         const windowTitle = document.getElementById('windowTitle');
         const connectionStatusEl = document.getElementById('connectionStatus');
-
         const usernameInputContainer = document.getElementById('usernameInputContainer');
         const usernameInput = document.getElementById('usernameInput');
         const setUsernameBtn = document.getElementById('setUsernameBtn');
         const usernameErrorDisplay = document.getElementById('usernameErrorDisplay');
         const usernamePromptMessage = document.getElementById('usernamePromptMessage');
-
         const chatInputArea = document.getElementById('chatInputArea');
         const messageInput = document.getElementById('messageInput');
         const sendMessageBtn = document.getElementById('sendMessageBtn');
 
-
         // --- Theme Switcher Logic ---
         let currentTheme = localStorage.getItem('app-theme') || 'light';
+        function applyTheme(theme) { /* ... same as before ... */ }
+        if (themeSwitcher) { /* ... same event listener as before ... */ }
         function applyTheme(theme) {
             document.body.classList.toggle('dark-mode', theme === 'dark');
             if (typeof anime === 'function') {
-                anime({
-                    targets: switchThumb,
-                    translateX: theme === 'dark' ? (50 - 20 - 6) : 0,
-                    duration: 300,
-                    easing: 'easeInOutExpo'
-                });
+                anime({ targets: switchThumb, translateX: theme === 'dark' ? (50 - 20 - 6) : 0, duration: 300, easing: 'easeInOutExpo' });
             }
         }
         if (themeSwitcher) {
@@ -201,7 +154,6 @@
             });
         }
         
-
         // --- Socket.IO Connection & Logic ---
         const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com';
         // const ACTIVE_SERVER_URL = 'http://localhost:3000'; 
@@ -209,6 +161,14 @@
         let socket;
         let myUsername = null;
 
+        function showUsernameInput() { /* ... same as before ... */ }
+        function showChatInput() { /* ... same as before ... */ }
+        function connectToServer() { /* ... same as before ... */ }
+        function handleSetUsername() { /* ... same as before ... */ }
+        function displayChatMessage(text, senderUsername, timestamp, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... modified below ... */ }
+        function addSystemMessage(text) { /* ... same as before ... */ }
+        function handleSendMessageToServer() { /* ... modified below ... */ }
+        
         function showUsernameInput() {
             console.log("DEBUG: showUsernameInput called");
             if (usernameInputContainer) usernameInputContainer.style.display = 'flex';
@@ -225,19 +185,16 @@
         }
 
         function connectToServer() {
+            if (socket && socket.connected) { /* ... same ... */ }
             if (socket && socket.connected) {
                 console.log('DEBUG: Already connected or attempting.');
-                if (myUsername) {
-                    showChatInput();
-                } else {
-                    showUsernameInput();
-                    addSystemMessage('Connected! Please set your username.');
-                }
+                if (myUsername) { showChatInput(); } else { showUsernameInput(); addSystemMessage('Connected! Please set your username.'); }
                 return;
             }
 
             console.log(`DEBUG: Attempting to connect to: ${ACTIVE_SERVER_URL}`);
             addSystemMessage(`Connecting to server at ${ACTIVE_SERVER_URL}...`);
+            if(connectionStatusEl) { /* ... same ... */ }
             if(connectionStatusEl) {
                 connectionStatusEl.textContent = 'Connecting...';
                 connectionStatusEl.classList.remove('connected', 'disconnected', 'error');
@@ -249,8 +206,26 @@
                 reconnectionAttempts: 5
             });
 
+            // --- Socket Event Handlers ---
+            socket.on('connect', () => { /* ... same logic ... */ });
+            socket.on('username_accepted', (username) => { /* ... same logic ... */ });
+            socket.on('username_error', (errorMessage) => { /* ... same logic ... */ });
+            // Global message receiver
+            socket.on('receive_message', (messageData) => { /* ... modified below ... */ }); 
+            // NEW Private message receiver
+            socket.on('receive_private_message', (messageData) => { /* ... added below ... */ });
+            // NEW Private message failure handler
+            socket.on('private_message_failed', (errorData) => { /* ... added below ... */ });
+            socket.on('user_connected', (username) => { /* ... same logic ... */ });
+            socket.on('user_disconnected', (username) => { /* ... same logic ... */ });
+            socket.on('general_error', (errorMessage) => { /* ... same logic ... */ });
+            socket.on('disconnect', (reason) => { /* ... same logic ... */ });
+            socket.on('connect_error', (err) => { /* ... same logic ... */ });
+
+
             socket.on('connect', () => {
                 console.log('DEBUG: Socket connected. ID:', socket.id);
+                if(connectionStatusEl) { /* ... update status ... */ }
                 if(connectionStatusEl) {
                     connectionStatusEl.textContent = 'Online';
                     connectionStatusEl.classList.add('connected');
@@ -276,14 +251,53 @@
                 if (usernameInput) usernameInput.focus();
             });
 
+            // Listener for GLOBAL messages
             socket.on('receive_message', (messageData) => {
-                console.log("DEBUG: Received message:", messageData);
-                if (!socket || messageData.socketId !== socket.id || !myUsername) { // Check if socket exists
-                    displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId);
+                console.log("DEBUG: Received global message:", messageData);
+                // Only display if it's not our own message (which we displayed optimistically)
+                if (!socket || !messageData.socketId || (messageData.socketId !== socket.id)) {
+                     displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId, false); // isPM = false
                 }
             });
 
-            socket.on('user_connected', (username) => {
+            // Listener for PRIVATE messages
+            socket.on('receive_private_message', (messageData) => {
+                console.log("DEBUG: Received private message data:", messageData);
+                let prefix = "";
+                let participant = ""; 
+                let isOwnSentPM = false;
+
+                if (messageData.type === 'sent') { // Confirmation of PM we sent
+                    prefix = `[PM to ${messageData.recipientUsername}]`;
+                    participant = messageData.recipientUsername;
+                    isOwnSentPM = true; // Mark this to potentially style differently or handle differently
+                    // We will display this confirmation for now
+                     displayChatMessage(messageData.text, myUsername, messageData.timestamp, socket.id, true, 'sent', participant); // isPM = true, type = 'sent'
+                } else if (messageData.type === 'received') { // PM received from someone else
+                    prefix = `[PM from ${messageData.senderUsername}]`;
+                    participant = messageData.senderUsername;
+                     displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, null, true, 'received', participant); // isPM = true, type = 'received', null socketId as it's not ours
+                    // Add notification logic here later if desired (e.g., change tab color, browser notification)
+                } else {
+                    console.warn("DEBUG: Received unknown private message type:", messageData);
+                }
+            });
+
+            // Listener for failed PMs
+            socket.on('private_message_failed', (errorData) => {
+                console.log("DEBUG: Private message failed:", errorData);
+                const message = `Failed to send PM to "${errorData.recipientUsername}". Reason: ${errorData.reason}`;
+                addSystemMessage(message); 
+            });
+
+
+            socket.on('user_connected', (username) => { /* ... same ... */ });
+            socket.on('user_disconnected', (username) => { /* ... same ... */ });
+            socket.on('general_error', (errorMessage) => { /* ... same ... */ });
+            socket.on('disconnect', (reason) => { /* ... same logic, calls showUsernameInput ... */ });
+            socket.on('connect_error', (err) => { /* ... same logic, calls showUsernameInput ... */ });
+            
+             socket.on('user_connected', (username) => {
                 console.log(`DEBUG: User connected: ${username}`);
                 addSystemMessage(`${username} has joined the chat.`);
             });
@@ -301,6 +315,7 @@
             socket.on('disconnect', (reason) => {
                 console.log(`DEBUG: Socket disconnected. Reason: ${reason}`);
                 addSystemMessage(`Disconnected: ${reason}. Attempting to reconnect...`);
+                if(connectionStatusEl) { /* ... update status ... */ }
                 if(connectionStatusEl) {
                     connectionStatusEl.textContent = 'Offline';
                     connectionStatusEl.classList.add('disconnected');
@@ -315,6 +330,7 @@
             socket.on('connect_error', (err) => {
                 console.error(`DEBUG: Connection Error to ${ACTIVE_SERVER_URL}:`, err.message);
                 addSystemMessage(`Connection Error: ${err.message}. Could not connect.`);
+                if(connectionStatusEl) { /* ... update status ... */ }
                 if(connectionStatusEl) {
                     connectionStatusEl.textContent = 'Error';
                     connectionStatusEl.classList.add('error');
@@ -323,66 +339,77 @@
                 showUsernameInput();
                 if (usernamePromptMessage) usernamePromptMessage.textContent = "Connection failed. Retrying...";
             });
+
+
         }
 
+        function handleSetUsername() { /* ... same as before ... */ }
         function handleSetUsername() {
             console.log("DEBUG: handleSetUsername function entered.");
-            if (!usernameInput) {
-                console.error("DEBUG: usernameInput element is null!");
-                return;
-            }
+            if (!usernameInput) { console.error("DEBUG: usernameInput element is null!"); return; }
             const desiredUsername = usernameInput.value.trim();
             console.log(`DEBUG: Desired username from input: "${desiredUsername}"`);
 
-            if (!desiredUsername) {
-                if (usernameErrorDisplay) usernameErrorDisplay.textContent = 'Username cannot be empty.';
-                console.log("DEBUG: Username was empty.");
-                return;
-            }
-
-            if (!socket) {
-                console.error("DEBUG: Socket object is null/undefined. Cannot emit.");
-                addSystemMessage("Error: Not connected to server (socket not initialized). Please refresh.");
-                return;
-            }
-
+            if (!desiredUsername) { if (usernameErrorDisplay) usernameErrorDisplay.textContent = 'Username cannot be empty.'; console.log("DEBUG: Username was empty."); return; }
+            if (!socket) { console.error("DEBUG: Socket object is null/undefined. Cannot emit."); addSystemMessage("Error: Not connected to server (socket not initialized). Please refresh."); return; }
             console.log(`DEBUG: Socket connected status for emit: ${socket.connected}`);
 
-            if (socket.connected) {
-                if (usernameErrorDisplay) usernameErrorDisplay.textContent = ''; 
-                console.log(`DEBUG: Emitting 'set_username' with: "${desiredUsername}"`);
-                socket.emit('set_username', desiredUsername);
-            } else {
-                addSystemMessage("Cannot set username: Not connected to server. Please wait or check connection.");
-                console.log("DEBUG: Cannot emit 'set_username' because socket is not connected.");
-            }
+            if (socket.connected) { if (usernameErrorDisplay) usernameErrorDisplay.textContent = ''; console.log(`DEBUG: Emitting 'set_username' with: "${desiredUsername}"`); socket.emit('set_username', desiredUsername); }
+            else { addSystemMessage("Cannot set username: Not connected to server. Please wait or check connection."); console.log("DEBUG: Cannot emit 'set_username' because socket is not connected."); }
         }
 
-        function displayChatMessage(text, senderUsername, timestamp, messageSocketId) {
+
+        // Modified to handle PM styling/prefixing
+        function displayChatMessage(text, senderUsername, timestamp, messageSocketId, isPM = false, pmType = null, otherParty = null) {
             if (!messagesContainer) { console.warn("DEBUG: messagesContainer not found"); return; }
             const messageDiv = document.createElement('div');
-            const messageClass = (socket && messageSocketId === socket.id && myUsername) ? 'sent' : 'received';
+            
+            // Determine if it's the user's own message
+            const isOwnMessage = (socket && messageSocketId === socket.id && myUsername);
+            const messageClass = isOwnMessage ? 'sent' : 'received';
             messageDiv.classList.add('message', messageClass);
 
             const bubbleDiv = document.createElement('div');
             bubbleDiv.classList.add('message-bubble');
+            
+            let displayText = text;
+            let metaPrefix = ""; // Optional prefix for the meta line
+
+             // Add prefix and potential styling for PMs
+            if (isPM) {
+                if (pmType === 'sent') { // Confirmation of a PM we sent
+                     bubbleDiv.classList.add('pm-sent'); // Add specific class for styling
+                     metaPrefix = `(PM to ${otherParty}) `; // Prefix for meta line
+                } else if (pmType === 'received') { // PM received from someone else
+                     bubbleDiv.classList.add('pm-received'); // Add specific class for styling
+                     metaPrefix = `(PM from ${senderUsername}) `;
+                }
+            }
+
+
             const textP = document.createElement('p');
             textP.classList.add('message-text');
-            textP.textContent = text;
+            textP.textContent = displayText; // Use the potentially prefixed text
+
             const metaSpan = document.createElement('span');
             metaSpan.classList.add('message-meta');
-            metaSpan.textContent = `${senderUsername || 'System'} • ${timestamp}`;
+            // Decide who the primary name is in the meta based on sent/received GLOBAL message or PM type
+             const metaUsername = isOwnMessage ? 'You' : senderUsername;
+            metaSpan.textContent = `${metaPrefix}${metaUsername} • ${timestamp}`; // Add prefix here
+
             bubbleDiv.appendChild(textP);
             bubbleDiv.appendChild(metaSpan);
             messageDiv.appendChild(bubbleDiv);
             messagesContainer.appendChild(messageDiv);
 
-            if (typeof anime === 'function') {
+            if (typeof anime === 'function') { /* ... animation ... */ }
+             if (typeof anime === 'function') {
                 anime({ targets: messageDiv, opacity: [0, 1], translateY: [10, 0], duration: 300, easing: 'easeOutExpo' });
             }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        function addSystemMessage(text) { /* ... same as before ... */ }
         function addSystemMessage(text) {
             if (!messagesContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; }
             const messageDiv = document.createElement('div');
@@ -395,69 +422,68 @@
             }
         }
 
+        // Modified to detect /msg command
         function handleSendMessageToServer() {
-            if (!messageInput || !sendMessageBtn) { console.warn("DEBUG: messageInput or sendMessageBtn not found"); return; }
-            const text = messageInput.value.trim();
-            if (!text) return;
+             if (!messageInput || !sendMessageBtn) { console.warn("DEBUG: messageInput or sendMessageBtn not found"); return; }
+            const messageText = messageInput.value.trim(); 
+            if (!messageText) return;
 
-            if (!socket || !socket.connected) {
-                addSystemMessage("Cannot send: Not connected.");
-                return;
-            }
-            if (!myUsername) {
-                addSystemMessage("Cannot send: Username not set.");
-                showUsernameInput();
-                return;
+            if (!socket || !socket.connected) { addSystemMessage("Cannot send: Not connected."); return; }
+            if (!myUsername) { addSystemMessage("Cannot send: Username not set."); showUsernameInput(); return; }
+
+            // Check for Private Message command: /msg username message
+            const pmMatch = messageText.match(/^\/msg\s+([a-zA-Z0-9_]{3,15})\s+(.+)/); 
+
+            if (pmMatch) {
+                // It's a private message command
+                const recipientUsername = pmMatch[1]; 
+                const pmText = pmMatch[2]; 
+
+                console.log(`DEBUG: Attempting to send PM to ${recipientUsername}: ${pmText}`);
+                socket.emit('send_private_message', {
+                    recipientUsername: recipientUsername,
+                    text: pmText
+                });
+                // Note: No optimistic UI for PMs in this version. Sender sees it when server confirms.
+
+            } else {
+                // It's a global message
+                const messageData = { text: messageText };
+                const now = new Date();
+                const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                // Optimistic UI update for sender's GLOBAL message
+                displayChatMessage(messageText, myUsername, timestamp, socket.id, false); // isPM = false
+                socket.emit('send_message', messageData); // Emit global message
             }
 
-            const messageData = { text: text };
-            const now = new Date();
-            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            displayChatMessage(text, myUsername, timestamp, socket.id); 
-            socket.emit('send_message', messageData);
-            messageInput.value = '';
+            messageInput.value = ''; 
             messageInput.style.height = 'auto';
             messageInput.focus();
         }
 
-        // --- Event Listeners for UI ---
-        // Ensure these are only added if the elements exist
-        if (setUsernameBtn) {
-            setUsernameBtn.addEventListener('click', handleSetUsername);
-        } else {
-            console.warn("DEBUG: setUsernameBtn not found.");
-        }
-        if (usernameInput) {
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleSetUsername();
-                }
-            });
-        } else {
-            console.warn("DEBUG: usernameInput for keypress not found.");
-        }
 
+        // --- Event Listeners for UI ---
+        if (setUsernameBtn) { /* ... same listener ... */ }
+        if (usernameInput) { /* ... same listener ... */ }
+        if (sendMessageBtn && messageInput) { /* ... same listeners ... */ }
+         if (setUsernameBtn) {
+            setUsernameBtn.addEventListener('click', handleSetUsername);
+        } else { console.warn("DEBUG: setUsernameBtn not found."); }
+        if (usernameInput) {
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { handleSetUsername(); } });
+        } else { console.warn("DEBUG: usernameInput for keypress not found."); }
         if (sendMessageBtn && messageInput) {
             sendMessageBtn.addEventListener('click', handleSendMessageToServer);
-            messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessageToServer();
-                }
-            });
-            messageInput.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-        } else {
-            console.warn("DEBUG: messageInput or sendMessageBtn for chat not found.");
-        }
+            messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToServer(); } });
+            messageInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+        } else { console.warn("DEBUG: messageInput or sendMessageBtn for chat not found."); }
+
 
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
-            applyTheme(currentTheme); // Apply theme as soon as DOM is ready
-            showUsernameInput(); // Show username input area first
-            connectToServer();   // Then attempt to connect
+            applyTheme(currentTheme);
+            showUsernameInput(); 
+            connectToServer();   
         });
     </script>
 </body>
