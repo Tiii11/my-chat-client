@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Chat - Full UI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Socket.IO Client: Defaulting to CDN. Change for Electron. -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        /* FONTS */
+         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        /* VARIABLES */
+        :root {
+            --font-primary: 'Roboto', sans-serif;
+            --font-display: 'Orbitron', sans-serif;
+            --transition-speed: 0.3s;
+            --transition-smooth: ease-in-out;
+            --blur-amount: 8px; /* Glassmorphism blur */
+
+            /* Light Theme */
+            --bg-color-light: #f0f4f8; 
+            --text-color-light: #1c1e21; 
+            --primary-accent-light: #007bff;
+            --secondary-accent-light: #0056b3;
+            --ui-bg-light: rgba(255, 255, 255, 0.8); 
+            --ui-bg-opaque-light: #ffffff;
+            --ui-border-light: rgba(0, 0, 0, 0.1); 
+            --msg-sent-bg-light: linear-gradient(135deg, #007bff, #0056b3); 
+            --msg-sent-text-light: #ffffff;
+            --msg-received-bg-light: #e9ecef; 
+            --msg-received-text-light: #1c1e21;
+            --shadow-light: 0 6px 20px rgba(0, 0, 0, 0.08); 
+            --input-bg-light: rgba(255, 255, 255, 0.9);
+            --placeholder-color-light: #6c757d;
+
+            /* Dark Theme */
+            --bg-color-dark: #0a0c10; 
+            --text-color-dark: #e1e3e6; 
+            --primary-accent-dark: #6aafff; 
+            --secondary-accent-dark: #388bfd;
+            --ui-bg-dark: rgba(22, 27, 34, 0.8); 
+            --ui-bg-opaque-dark: #161b22;
+            --ui-border-dark: rgba(255, 255, 255, 0.15); 
+            --msg-sent-bg-dark: linear-gradient(135deg, #238636, #1a6328); 
+            --msg-sent-text-dark: #ffffff;
+            --msg-received-bg-dark: #1c2128; 
+            --msg-received-text-dark: #e1e3e6;
+            --shadow-dark: 0 6px 25px rgba(74, 158, 255, 0.15); 
+            --input-bg-dark: rgba(13, 17, 23, 0.9);
+            --placeholder-color-dark: #7d8590;
+
+            /* Applied variables */
+            --bg-color: var(--bg-color-light); --text-color: var(--text-color-light); --primary-accent: var(--primary-accent-light); --secondary-accent: var(--secondary-accent-light); --ui-bg: var(--ui-bg-light); --ui-bg-opaque: var(--ui-bg-opaque-light); --ui-border: var(--ui-border-light); --msg-sent-bg: var(--msg-sent-bg-light); --msg-sent-text: var(--msg-sent-text-light); --msg-received-bg: var(--msg-received-bg-light); --msg-received-text: var(--msg-received-text-light); --shadow: var(--shadow-light); --input-bg: var(--input-bg-light); --placeholder-color: var(--placeholder-color-light);
+        }
+        body.dark-mode {
+            --bg-color: var(--bg-color-dark); --text-color: var(--text-color-dark); --primary-accent: var(--primary-accent-dark); --secondary-accent: var(--secondary-accent-dark); --ui-bg: var(--ui-bg-dark); --ui-bg-opaque: var(--ui-bg-opaque-dark); --ui-border: var(--ui-border-dark); --msg-sent-bg: var(--msg-sent-bg-dark); --msg-sent-text: var(--msg-sent-text-dark); --msg-received-bg: var(--msg-received-bg-dark); --msg-received-text: var(--msg-received-text-dark); --shadow: var(--shadow-dark); --input-bg: var(--input-bg-dark); --placeholder-color: var(--placeholder-color-dark);
+        }
+        
+        /* BASE & BODY */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: var(--font-primary); 
+            background-color: var(--bg-color); 
+            background: linear-gradient(135deg, var(--bg-color), var(--secondary-accent));
+            color: var(--text-color); 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; overflow: hidden; 
+            transition: background var(--transition-speed) var(--transition-smooth), color var(--transition-speed) var(--transition-smooth); 
+        }
+
+        /* APP CONTAINER */
+        .app-container { 
+            width: 95vw; max-width: 800px; height: 90vh; max-height: 750px; 
+            background-color: var(--ui-bg); 
+            backdrop-filter: blur(var(--blur-amount)); 
+            border-radius: 24px; 
+            box-shadow: var(--shadow); 
+            display: flex; flex-direction: column; overflow: hidden; 
+            border: 1px solid var(--ui-border); 
+            transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth); 
+        }
+
+        /* HEADER */
+        .chat-header { 
+            padding: 15px 25px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--ui-border); 
+            flex-shrink: 0; 
+            background-color: transparent; 
+            transition: border-color var(--transition-speed) var(--transition-smooth);
+            position: relative;
+        }
+        .chat-header h1 { font-family: var(--font-display); font-size: 1.4em; color: var(--primary-accent); transition: color var(--transition-speed) var(--transition-smooth); letter-spacing: 1px; }
+        .chat-header .connection-status { font-size: 0.7em; padding: 3px 8px; border-radius: 5px; margin-left: auto; margin-right: 15px; text-transform: uppercase; font-weight: bold;}
+        .chat-header .connection-status.connected { background-color: #28a745; color: white; }
+        .chat-header .connection-status.disconnected { background-color: #dc3545; color: white; }
+        .chat-header .connection-status.error { background-color: #ffc107; color: black; } 
+        .theme-switcher { display: flex; align-items: center; cursor: pointer; flex-shrink: 0; margin-left: 10px; }
+        .switch-track { width: 50px; height: 26px; background-color: var(--ui-border); border-radius: 13px; position: relative; transition: background-color var(--transition-speed) var(--transition-smooth); }
+        .switch-thumb { width: 20px; height: 20px; background-color: var(--ui-bg-opaque); border-radius: 50%; position: absolute; top: 3px; left: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        body.dark-mode .switch-thumb { background-color: var(--text-color-dark); }
+        #logoutButton { background: none; border: 1px solid var(--ui-border); color: var(--text-color); padding: 4px 10px; border-radius: 5px; cursor: pointer; margin-left: 15px; font-size: 0.8em; transition: all 0.2s ease; display: none; }
+        #logoutButton:hover { background-color: var(--ui-border); border-color: var(--text-color);}
+        body.dark-mode #logoutButton { border-color: var(--ui-border-dark); }
+        body.dark-mode #logoutButton:hover { background-color: var(--ui-border-dark); border-color: var(--text-color-dark);}
+
+        /* AUTH CONTAINER */
+        #authContainer { display: flex; flex-direction: column; align-items: center; padding: 30px; flex-grow: 1; justify-content: center; background-color: var(--ui-bg-opaque); transition: background-color var(--transition-speed) var(--transition-smooth); }
+        #loginForm, #registerForm { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 350px; padding: 20px; border-radius: 10px; background-color: var(--ui-bg-opaque); border: 1px solid var(--ui-border); box-shadow: var(--shadow-light); }
+        body.dark-mode #loginForm, body.dark-mode #registerForm { box-shadow: var(--shadow-dark); }
+        #registerForm { display: none; } 
+        #authContainer h2 { text-align: center; margin-bottom: 10px; color: var(--primary-accent); font-family: var(--font-display); }
+        #authContainer input[type="text"], #authContainer input[type="password"] { padding: 12px; border-radius: 8px; border: 1px solid var(--ui-border); background-color: var(--input-bg); color: var(--text-color); font-size: 0.95em; }
+        #authContainer button { padding: 12px; border-radius: 8px; background: var(--primary-accent); color: white; border: none; cursor: pointer; font-weight: bold; font-size: 1em; transition: background-color 0.2s ease; }
+        #authContainer button:hover { background: var(--secondary-accent); }
+        #authContainer .error-message { color: #e53e3e; font-size: 0.85em; text-align: center; min-height: 1.2em; }
+        #authContainer p { text-align: center; font-size: 0.9em; }
+        #authContainer a { color: var(--primary-accent); text-decoration: none; cursor: pointer; }
+        #authContainer a:hover { text-decoration: underline; }
+
+        /* MAIN LAYOUT (Chat View) */
+        .chat-main { display: flex; flex-grow: 1; overflow: hidden; border-top: 1px solid var(--ui-border); }
+        
+        /* SIDEBAR */
+        .sidebar { 
+            width: 200px; 
+            border-right: 1px solid var(--ui-border); 
+            display: flex; flex-direction: column; 
+            background-color: transparent; 
+            padding: 10px 0;
+            overflow-y: auto; flex-shrink: 0; 
+            transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth);
+        }
+        .sidebar h2 { /* Main section titles like "Navigation", "Contacts" */
+            font-size: 0.85em; padding: 10px 15px 5px 15px; 
+            color: var(--primary-accent); text-transform: uppercase; 
+            letter-spacing: 1px; font-weight: 700; border-bottom: 1px solid var(--ui-border); margin-bottom: 5px;
+        }
+        .sidebar .nav-list, .sidebar .user-list-section ul, .sidebar .conversation-list {
+            list-style: none; padding: 0; margin: 0 0 10px 0;
+        }
+        .sidebar .nav-list li, .sidebar .user-list-section li, .sidebar .conversation-list li {
+            padding: 10px 15px; font-size: 0.9em; cursor: pointer;
+            border-bottom: 1px solid var(--ui-border);
+            transition: background-color 0.2s ease, color 0.2s var(--transition-smooth);
+            display: flex; justify-content: space-between; align-items: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            position: relative; 
+        }
+        .sidebar .nav-list li:last-child, .sidebar .user-list-section li:last-child, .sidebar .conversation-list li:last-child {
+            border-bottom: none;
+        }
+        .sidebar .nav-list li.active-nav, .sidebar .conversation-list li.active { 
+            background-color: var(--primary-accent); color: white; font-weight: bold;
+        }
+        body.dark-mode .sidebar .nav-list li.active-nav, body.dark-mode .sidebar .conversation-list li.active { color: var(--ui-bg-opaque-dark); }
+        .sidebar .nav-list li:hover, .sidebar .user-list-section li:hover, .sidebar .conversation-list li:hover {
+            background-color: rgba(0,0,0,0.04);
+        }
+        body.dark-mode .sidebar .nav-list li:hover, body.dark-mode .sidebar .user-list-section li:hover, body.dark-mode .sidebar .conversation-list li:hover {
+            background-color: rgba(255,255,255,0.04);
+        }
+        .user-list-section .list-title { 
+             font-size: 0.8em; font-weight: bold; padding: 8px 15px 4px 15px; color: var(--secondary-accent);
+             margin-top: 15px; border-top: 1px dashed var(--ui-border);
+        }
+        .user-list-section li .friend-name, .user-list-section li .username-text { /* For name part */
+            flex-grow: 1; overflow: hidden; text-overflow: ellipsis;
+        }
+        .user-list-section li .friend-actions, .user-list-section li .user-actions { /* Container for buttons */
+            display: flex; gap: 5px; flex-shrink: 0;
+        }
+        .user-list-section li .friend-actions button, .user-list-section li .user-actions button {
+            background-color: transparent; border: 1px solid var(--secondary-accent);
+            color: var(--secondary-accent); padding: 3px 6px; font-size: 0.8em;
+            border-radius: 4px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .user-list-section li .friend-actions button:hover, .user-list-section li .user-actions button:hover {
+            background-color: var(--secondary-accent); color: white;
+        }
+        .user-list-section .friend-actions .accept-btn { border-color: #28a745; color: #28a745; }
+        .user-list-section .friend-actions .accept-btn:hover { background-color: #28a745; color: white; }
+        .user-list-section .friend-actions .reject-btn, .user-list-section .friend-actions .remove-btn { border-color: #dc3545; color: #dc3545; }
+        .user-list-section .friend-actions .reject-btn:hover, .user-list-section .friend-actions .remove-btn:hover { background-color: #dc3545; color: white; }
+        .user-list-section li.is-me span:first-child { font-style: italic; }
+
+        .conversation-list li .unread-indicator { background-color: #dc3545; width: 8px; height: 8px; border-radius: 50%; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: none; }
+        .conversation-list li.has-unread .unread-indicator { display: block; }
+
+        /* Main Content Area for Views */
+        .chat-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background-color: transparent;}
+        .chat-view { 
+            display: none; 
+            flex-direction: column; 
+            height: 100%; width: 100%;
+            position: absolute; 
+            top: 0; left: 0;
+            background-color: transparent; 
+        }
+        .chat-view.active-view {
+            display: flex; 
+        }
+        
+        /* Messages Container */
+        .messages-container { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; scrollbar-width: thin; scrollbar-color: var(--primary-accent) transparent; scroll-behavior: smooth; }
+        .messages-container::-webkit-scrollbar { width: 6px; }
+        .messages-container::-webkit-scrollbar-track { background: transparent; }
+        .messages-container::-webkit-scrollbar-thumb { background-color: var(--primary-accent); border-radius: 3px; }
+        
+        /* Generic List View for Friends/Requests pages */
+        .list-view-container { padding: 20px; overflow-y: auto; height: 100%; }
+        .list-view-container h3 { font-family: var(--font-display); color: var(--primary-accent); margin-bottom: 15px; border-bottom: 1px solid var(--ui-border); padding-bottom: 10px; }
+        .list-view-container ul { list-style: none; padding: 0; margin: 0; }
+
+        /* Message Styles */
+        .message, .system-message { display: flex; max-width: 85%; }
+        .system-message { align-self: center; max-width: 100%; font-style: italic; font-size: 0.85em; color: var(--text-color); opacity: 0.6; padding: 8px 0; text-align: center;}
+        .message-bubble { padding: 12px 18px; border-radius: 20px; line-height: 1.5; font-size: 0.95em; word-wrap: break-word; box-shadow: 0 3px 8px rgba(0,0,0,0.06); transition: background var(--transition-speed) var(--transition-smooth), color var(--transition-speed) var(--transition-smooth); }
+        .message-text { margin-bottom: 5px; }
+        .message-meta { font-size: 0.7em; opacity: 0.7; text-align: right; margin-top: 3px;}
+        .message.sent { align-self: flex-end; }
+        .message.sent .message-bubble { background: var(--msg-sent-bg); color: var(--msg-sent-text); border-bottom-right-radius: 6px; }
+        .message.received { align-self: flex-start; }
+        .message.received .message-bubble { background-color: var(--msg-received-bg); color: var(--msg-received-text); border-bottom-left-radius: 6px; }
+        .message-bubble.pm-sent { background: var(--secondary-accent-light); border: 1px solid var(--primary-accent-light); color: var(--msg-sent-text-light); }
+        .message-bubble.pm-received { background-color: var(--ui-border-light); border: 1px solid var(--text-color-light); color: var(--msg-received-text-light); }
+        body.dark-mode .message-bubble.pm-sent { background: var(--secondary-accent-dark); border: 1px dashed var(--primary-accent-dark); color: var(--msg-sent-text-dark); }
+        body.dark-mode .message-bubble.pm-received { background-color: var(--ui-border-dark); border: 1px dashed var(--text-color-dark); color: var(--msg-received-text-dark); }
+        
+        /* Message Input Area */
+        .message-input-area { display: flex; padding: 15px 20px; border-top: 1px solid var(--ui-border); background-color: var(--ui-bg); backdrop-filter: blur(var(--blur-amount)); transition: border-color var(--transition-speed) var(--transition-smooth), background-color var(--transition-speed) var(--transition-smooth); flex-shrink: 0; gap: 10px; }
+        .message-input-area textarea { flex-grow: 1; padding: 12px 18px; border: 1px solid var(--ui-border); border-radius: 22px; resize: none; font-family: var(--font-primary); font-size: 0.95em; background-color: var(--input-bg); color: var(--text-color); transition: all var(--transition-speed) var(--transition-smooth); min-height: 46px; max-height: 100px; overflow-y: auto; }
+        .message-input-area textarea::placeholder { color: var(--placeholder-color); transition: color var(--transition-speed) var(--transition-smooth); }
+        .message-input-area textarea:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-accent-dark_alpha, rgba(74, 158, 255, 0.3)); }
+        body.dark-mode .message-input-area textarea:focus { box-shadow: 0 0 0 3px var(--primary-accent-light_alpha, rgba(0, 123, 255, 0.3)); }
+        .message-input-area button { padding: 0 20px; background: var(--primary-accent); color: white; border: none; border-radius: 22px; cursor: pointer; font-family: var(--font-primary); font-weight: bold; font-size: 0.95em; transition: background-color var(--transition-speed) var(--transition-smooth), transform 0.1s ease; display: flex; align-items: center; justify-content: center; flex-shrink: 0; height: 46px; }
+        .message-input-area button:hover { background: var(--secondary-accent); }
+        .message-input-area button:active { transform: scale(0.97); }
+        .message-input-area button svg { width: 18px; height: 18px; fill: white; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="chat-header">
+            <h1 id="windowTitle">Nexus Chat</h1>
+            <span id="connectionStatus" class="connection-status disconnected">Offline</span>
+            <button id="logoutButton" style="display: none;">Logout</button>
+            <div class="theme-switcher" id="themeSwitcher">
+                <div class="switch-track"><div class="switch-thumb" id="switchThumb"></div></div>
+            </div>
+        </div>
+
+        <div id="authContainer">
+            <form id="loginForm"><h2>Login</h2><input type="text" id="loginUsername" placeholder="Username" required><input type="password" id="loginPassword" placeholder="Password" required><button type="submit">Login</button><p id="loginError" class="error-message"></p><p>Don't have an account? <a href="#" id="showRegisterLink">Register</a></p></form>
+            <form id="registerForm" style="display: none;"><h2>Register</h2><input type="text" id="registerUsername" placeholder="Username (3-15 chars, A-Z, 0-9, _)" required><input type="password" id="registerPassword" placeholder="Password (min 6 chars)" required><input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required><button type="submit">Register</button><p id="registerError" class="error-message"></p><p>Already have an account? <a href="#" id="showLoginLink">Login</a></p></form>
+        </div>
+
+        <div class="chat-main" id="chatMainArea" style="display: none;">
+            <div class="sidebar" id="sidebar">
+                <h2>Navigation</h2>
+                <ul class="nav-list" id="navigationList">
+                    <li data-view-id="globalChatView" class="active-nav">Global Chat</li>
+                    <li data-view-id="onlineUsersView">Online Users</li>
+                    <li data-view-id="friendRequestsView">Friend Requests</li>
+                    <li data-view-id="friendsView">My Friends</li>
+                </ul>
+
+                <h2>Conversations</h2>
+                <ul class="conversation-list" id="conversationList">
+                    <!-- Global chat tab initially, PMs added by JS -->
+                </ul>
+            </div>
+            <div class="chat-content" id="chatContent">
+                <!-- Global Chat View -->
+                <div class="chat-view active-view" id="globalChatView">
+                    <div class="messages-container" id="messagesContainer_global">
+                         <p class="system-message loading-history" data-conversation-id="global_loading" style="display:none;">Loading history...</p>
+                    </div>
+                </div>
+
+                <!-- Online Users View -->
+                <div class="chat-view" id="onlineUsersView">
+                     <div class="list-view-container">
+                        <h3>Online Users</h3>
+                        <div class="user-list-section">
+                            <ul id="onlineUsersDisplay"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Friend Requests View -->
+                <div class="chat-view" id="friendRequestsView">
+                     <div class="list-view-container">
+                        <h3>Friend Requests Received</h3>
+                        <div class="user-list-section">
+                             <ul id="friendRequestsReceivedDisplay"></ul>
+                        </div>
+                        <h3 style="margin-top: 20px;">Pending Requests Sent</h3>
+                        <div class="user-list-section">
+                             <ul id="friendRequestsSentDisplay"></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- My Friends View -->
+                <div class="chat-view" id="friendsView">
+                    <div class="list-view-container">
+                        <h3>My Friends</h3>
+                        <div class="user-list-section">
+                            <ul id="friendsListDisplay"></ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- PM Message Containers will be added here by JS, inside their own dynamically created .chat-view -->
+            </div>
+        </div>
+
+        <div class="message-input-area" id="chatInputArea" style="display: none;">
+            <textarea id="messageInput" placeholder="Type message..." rows="1"></textarea>
+            <button id="sendMessageBtn"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
+        </div>
+    </div> 
+
+    <script>
+        // --- DOM Elements (ensure all are correct) ---
+        const themeSwitcher = document.getElementById('themeSwitcher'); const switchThumb = document.getElementById('switchThumb'); const windowTitle = document.getElementById('windowTitle'); const connectionStatusEl = document.getElementById('connectionStatus'); const logoutButton = document.getElementById('logoutButton'); const authContainer = document.getElementById('authContainer'); const loginForm = document.getElementById('loginForm'); const registerForm = document.getElementById('registerForm'); const loginUsernameInput = document.getElementById('loginUsername'); const loginPasswordInput = document.getElementById('loginPassword'); const loginErrorDisplay = document.getElementById('loginError'); const registerUsernameInput = document.getElementById('registerUsername'); const registerPasswordInput = document.getElementById('registerPassword'); const registerConfirmPasswordInput = document.getElementById('registerConfirmPassword'); const registerErrorDisplay = document.getElementById('registerError'); const showRegisterLink = document.getElementById('showRegisterLink'); const showLoginLink = document.getElementById('showLoginLink'); const chatMainArea = document.getElementById('chatMainArea'); const sidebar = document.getElementById('sidebar'); const navigationList = document.getElementById('navigationList'); const conversationList = document.getElementById('conversationList'); const chatContent = document.getElementById('chatContent'); const chatInputArea = document.getElementById('chatInputArea'); const messageInput = document.getElementById('messageInput'); const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const globalChatView = document.getElementById('globalChatView'); const friendsView = document.getElementById('friendsView'); const friendRequestsView = document.getElementById('friendRequestsView'); const onlineUsersView = document.getElementById('onlineUsersView');
+        const globalMessagesContainer = document.getElementById('messagesContainer_global'); const friendRequestsReceivedDisplay = document.getElementById('friendRequestsReceivedDisplay'); const friendRequestsSentDisplay = document.getElementById('friendRequestsSentDisplay'); const friendsListDisplay = document.getElementById('friendsListDisplay'); const onlineUsersDisplay = document.getElementById('onlineUsersDisplay');
+
+        // --- App State ---
+        const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com';
+        let socket = null; let myUsername = localStorage.getItem('username') || null; let myUserId = localStorage.getItem('userId') || null;
+        let authToken = localStorage.getItem('token') || null;
+        let activeConversationId = 'global'; // 'global' or 'pm_username'
+        let activeViewId = 'globalChatView'; // To track the current "page"
+        const pmMessageContainers = {}; const loadedHistories = new Set();
+        let currentFriends = []; let currentPendingReceived = []; let currentPendingSent = [];
+        let currentOnlineUsers = [];
+
+        // --- Theme Logic (collapsed) ---
+        let currentTheme = localStorage.getItem('app-theme') || 'light';
+        function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); if (typeof anime === 'function') { anime({ targets: switchThumb, translateX: theme === 'dark' ? 24 : 0, duration: 400, easing: 'easeOutQuint' }); } }
+        if (themeSwitcher) { themeSwitcher.addEventListener('click', () => { currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark'; localStorage.setItem('app-theme', currentTheme); applyTheme(currentTheme); }); }
+
+        // --- UI State & Navigation ---
+        function showAuthView(view = 'login') { /* ... */ } function showChatLayout() { /* ... */ } function switchMainView(viewId) { /* ... */ }
+        function showAuthView(view = 'login') { if (!authContainer || !chatMainArea || !chatInputArea) return; console.log(`DEBUG: Showing ${view} view`); authContainer.style.display = 'flex'; chatMainArea.style.display = 'none'; chatInputArea.style.display = 'none'; if (loginForm) loginForm.style.display = (view === 'login') ? 'flex' : 'none'; if (registerForm) registerForm.style.display = (view === 'register') ? 'flex' : 'none'; if (view === 'login' && loginUsernameInput) loginUsernameInput.focus(); if (view === 'register' && registerUsernameInput) registerUsernameInput.focus(); if (connectionStatusEl) connectionStatusEl.textContent = 'Login Required'; if (connectionStatusEl) connectionStatusEl.classList.remove('connected', 'error'); if (connectionStatusEl) connectionStatusEl.classList.add('disconnected'); if (logoutButton) logoutButton.style.display = 'none'; }
+        function showChatLayout() { if (!authContainer || !chatMainArea || !chatInputArea) return; console.log("DEBUG: showChatLayout (authenticated)"); authContainer.style.display = 'none'; chatMainArea.style.display = 'flex'; chatInputArea.style.display = 'flex'; if (logoutButton) logoutButton.style.display = 'inline-block'; switchMainView(activeViewId); }
+        function switchMainView(viewId) {
+            console.log("DEBUG: Switching main view to:", viewId);
+            activeViewId = viewId;
+            document.querySelectorAll('.chat-content .chat-view').forEach(view => { view.classList.toggle('active-view', view.id === viewId); });
+            document.querySelectorAll('#navigationList li').forEach(navLi => { navLi.classList.toggle('active-nav', navLi.dataset.viewId === viewId); });
+            if (viewId.toLowerCase().includes('chat') && messageInput) { messageInput.focus(); }
+            if (viewId === 'globalChatView' && socket && socket.connected && !loadedHistories.has('global')) { requestMessageHistory('global'); }
+            // Add logic here if other views need to fetch data when switched to, e.g., friend lists
+             if (viewId === 'friendsView' || viewId === 'friendRequestsView' || viewId === 'onlineUsersView') {
+                 if (socket && socket.connected) socket.emit('request_friend_data_and_user_list');
+             }
+        }
+
+
+        // --- API & Socket Connection (collapsed) ---
+        async function handleLogin(event) { /* ... */ } async function handleRegister(event) { /* ... */ } function handleLogout() { /* ... */ }
+        function connectToServer() { /* ... */ }
+        async function handleLogin(event) { event.preventDefault(); const username = loginUsernameInput.value; const password = loginPasswordInput.value; if (loginErrorDisplay) loginErrorDisplay.textContent = ''; try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/login`; console.log("DEBUG: Attempting login to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Login failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Login successful', data); authToken = data.token; myUsername = data.user.username; myUserId = data.user.id; localStorage.setItem('token', authToken); localStorage.setItem('username', myUsername); localStorage.setItem('userId', myUserId); if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`; showChatLayout(); connectToServer(); } catch (error) { console.error('DEBUG: Login failed:', error); if (loginErrorDisplay) loginErrorDisplay.textContent = error.message || 'Login failed.'; } }
+        async function handleRegister(event) { event.preventDefault(); const username = registerUsernameInput.value; const password = registerPasswordInput.value; const confirmPassword = registerConfirmPasswordInput.value; if (registerErrorDisplay) registerErrorDisplay.textContent = ''; if (password !== confirmPassword) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Passwords do not match.'; return; } if (password.length < 6) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Password min 6 characters.'; return; } if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 15) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Username invalid (3-15 chars, A-Z, 0-9, _).'; return; } try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/register`; console.log("DEBUG: Attempting registration to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Registration failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Registration successful', data); alert('Registration successful! Please login.'); showAuthView('login'); } catch (error) { console.error('DEBUG: Registration failed:', error); if (registerErrorDisplay) registerErrorDisplay.textContent = error.message || 'Registration failed.'; } }
+        function handleLogout() { console.log("DEBUG: Logging out"); localStorage.removeItem('token'); localStorage.removeItem('username'); localStorage.removeItem('userId'); authToken = null; myUsername = null; myUserId = null; if (socket && socket.connected) { socket.disconnect(); } socket = null; if (windowTitle) windowTitle.textContent = 'Nexus Chat'; showAuthView('login'); globalMessagesContainer.innerHTML = ''; document.querySelectorAll('.chat-content .chat-view:not(#globalChatView) .messages-container').forEach(div => div.remove()); document.querySelectorAll('.chat-content .chat-view:not(#globalChatView)').forEach(div => div.remove()); if(onlineUsersDisplay) onlineUsersDisplay.innerHTML = ''; if(friendRequestsReceivedDisplay) friendRequestsReceivedDisplay.innerHTML = ''; if(friendRequestsSentDisplay) friendRequestsSentDisplay.innerHTML = ''; if(friendsListDisplay) friendsListDisplay.innerHTML = ''; document.querySelectorAll('#conversationList li:not([data-conversation-id="global"])').forEach(li => li.remove()); Object.keys(pmMessageContainers).forEach(key => delete pmMessageContainers[key]); activeConversationId = 'global'; loadedHistories.clear(); currentFriends = []; currentPendingReceived = []; currentPendingSent = []; currentOnlineUsers = []; if (conversationList) { document.querySelectorAll('#conversationList li').forEach(li => { li.classList.toggle('active', li.dataset.conversationId === 'global'); li.classList.remove('has-unread'); }); } activeViewId = 'globalChatView'; switchMainView('globalChatView'); }
+        function connectToServer() { if (socket && socket.connected) { console.log("DEBUG: Socket already connected."); return; } if (!authToken) { console.log("DEBUG: No auth token, cannot connect socket."); showAuthView('login'); return; } console.log(`DEBUG: Attempting to connect socket with auth token...`); if(connectionStatusEl) connectionStatusEl.textContent = 'Connecting...'; if (socket) { socket.disconnect(); } socket = io(ACTIVE_SERVER_URL, { transports: ['websocket', 'polling'], reconnectionAttempts: 5, auth: { token: authToken } }); socket.on('connect', () => { console.log('DEBUG: Socket connected. ID:', socket.id); if(connectionStatusEl) { connectionStatusEl.textContent = 'Online'; connectionStatusEl.classList.add('connected'); connectionStatusEl.classList.remove('disconnected', 'error'); } addSystemMessage('Connected to chat.', 'globalChatView'); showChatLayout(); socket.emit('request_friend_data_and_user_list'); requestMessageHistory('global'); }); socket.on('load_history', ({ conversationId, messages, error }) => { console.log(`DEBUG: Received 'load_history' for ${conversationId}`, messages); const loadingIndicator = document.querySelector(`.loading-history[data-conversation-id="${conversationId}_loading"]`); if (loadingIndicator) loadingIndicator.style.display = 'none'; if (error) { addSystemMessage(`Error loading history for ${conversationId}: ${error}`, conversationId === 'global' ? 'globalChatView' : conversationId + "View"); return; } const targetContainerId = conversationId === 'global' ? 'messagesContainer_global' : `messagesContainer_${conversationId}`; const targetContainer = document.getElementById(targetContainerId); if (targetContainer) { if (!loadedHistories.has(conversationId)) { targetContainer.innerHTML = ''; if (conversationId.startsWith('pm_')) { const otherUser = conversationId.replace('pm_', ''); const pmHeader = document.createElement('p'); pmHeader.classList.add('system-message'); pmHeader.textContent = `Private Chat with ${otherUser}`; pmHeader.style.fontWeight = 'bold'; targetContainer.appendChild(pmHeader); } } messages.forEach(msg => { displayChatMessage(msg.text, msg.senderUsername, msg.timestamp, msg.socketId, conversationId !== 'global', msg.recipient ? (msg.senderUsername === myUsername ? 'sent' : 'received') : null, msg.recipient ? (msg.senderUsername === myUsername ? (msg.recipientUsername || 'User') : msg.senderUsername) : null ); }); targetContainer.scrollTop = targetContainer.scrollHeight; loadedHistories.add(conversationId); } else { console.warn(`DEBUG: Target container not found for history: ${targetContainerId}`); } }); socket.on('connect_error', handleConnectError); socket.on('disconnect', handleDisconnect); socket.on('receive_message', handleGlobalMessage); socket.on('receive_private_message', handlePrivateMessage); socket.on('private_message_failed', handlePrivateMessageFailure); socket.on('update_user_list', updateUserList); socket.on('update_friend_data', handleFriendDataUpdate); socket.on('incoming_friend_request', handleIncomingFriendRequest); socket.on('your_friend_request_accepted', handleYourRequestAccepted); socket.on('your_friend_request_rejected', handleYourRequestRejected); socket.on('friend_removed_confirmation', handleFriendRemovedLocally); socket.on('you_were_removed_as_friend', handleYouWereRemoved); socket.on('friend_request_error', (data) => { addSystemMessage(`Friend Request Error: ${data.message}`, activeViewId);}); socket.on('friend_action_error', (data) => { addSystemMessage(`Friend Action Error: ${data.message}`, activeViewId);}); socket.on('user_connected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has joined.`, 'globalChatView'); }); socket.on('user_disconnected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has left.`, 'globalChatView'); }); socket.on('general_error', (errorMessage) => { addSystemMessage(`Server Error: ${errorMessage}`, activeViewId); }); }
+
+        // --- Specific Message/Friend Event Handlers (collapsed for brevity) ---
+        function handleGlobalMessage(messageData) { /* ... */ } function handlePrivateMessage(messageData) { /* ... */ } function handlePrivateMessageFailure(errorData) { /* ... */ }
+        function handleFriendDataUpdate(data) { /* ... */ } function handleIncomingFriendRequest(data) { /* ... */ } function handleYourRequestAccepted(data) { /* ... */ }
+        function handleYourRequestRejected(data) { /* ... */ } function handleFriendRemovedLocally(data){ /* ... */ } function handleYouWereRemoved(data){ /* ... */ }
+        function updateUserList(usernames) { /* ... */ } function renderAllFriendRelatedLists() { /* ... */ } function renderOnlineUsersList() { /* ... */ }
+        function handleGlobalMessage(messageData) { console.log("DEBUG: Received global message:", messageData); if (!socket || !messageData.socketId || (messageData.socketId !== socket.id)) { displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId, false, null, 'global'); } }
+        function handlePrivateMessage(messageData) { console.log("DEBUG: Received private message data:", messageData); let participant = ""; let isOwn = false; if (messageData.type === 'sent') { participant = messageData.recipientUsername; isOwn = true; } else if (messageData.type === 'received') { participant = messageData.senderUsername; isOwn = false; } else { return; } const conversationId = openOrCreatePMConversation(participant, false); displayChatMessage(messageData.text, isOwn ? myUsername : participant, messageData.timestamp, isOwn ? socket.id : null, true, messageData.type, participant); if (!isOwn && conversationId !== activeConversationId) { const conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`); if (conversationTab) { conversationTab.classList.add('has-unread'); } } }
+        function handlePrivateMessageFailure(errorData) { console.log("DEBUG: Private message failed:", errorData); const message = `Failed to send PM to "${errorData.recipientUsername}". Reason: ${errorData.reason}`; addSystemMessage(message, 'globalChatView'); }
+        function handleDisconnect(reason) { console.log(`DEBUG: Socket disconnected. Reason: ${reason}`); addSystemMessage(`Disconnected: ${reason}. Reconnecting...`, 'globalChatView'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Offline'; connectionStatusEl.classList.add('disconnected'); connectionStatusEl.classList.remove('connected', 'error'); } loadedHistories.clear(); currentFriends = []; currentPendingReceived = []; currentPendingSent = []; currentOnlineUsers = []; renderAllFriendRelatedLists(); renderOnlineUsersList(); if (windowTitle) windowTitle.textContent = `Nexus Chat (Offline)`; showAuthView('login'); }
+        function handleConnectError(err) { console.error(`DEBUG: Connection Error to ${ACTIVE_SERVER_URL}:`, err.message); if (err.message.toLowerCase().includes('authentication error')) { addSystemMessage(`Authentication failed: ${err.message}. Logging out.`, 'globalChatView'); handleLogout(); } else { addSystemMessage(`Connection Error: ${err.message}. Retrying...`, 'globalChatView'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Error'; connectionStatusEl.classList.add('error'); connectionStatusEl.classList.remove('connected', 'disconnected'); } showAuthView('login');} }
+        function handleFriendDataUpdate(data) { console.log("DEBUG: Received friend data update:", data); currentFriends = data.friends || []; currentPendingReceived = data.pendingReceived || []; currentPendingSent = data.pendingSent || []; renderAllFriendRelatedLists(); renderOnlineUsersList(); }
+        function handleIncomingFriendRequest(data) { console.log("DEBUG: Incoming friend request from:", data.requesterUsername); addSystemMessage(`New friend request from ${data.requesterUsername}! Check Friend Requests.`, 'globalChatView'); if (!currentPendingReceived.find(req => req.id === data.requesterId)) { currentPendingReceived.push({ id: data.requesterId, username: data.requesterUsername }); renderAllFriendRelatedLists(); } }
+        function handleYourRequestAccepted(data) { console.log("DEBUG: Your friend request accepted by:", data.accepterUsername); addSystemMessage(`${data.accepterUsername} accepted your friend request!`, 'globalChatView'); currentPendingSent = currentPendingSent.filter(req => req.id !== data.accepterId); if (!currentFriends.find(f => f.id === data.accepterId)) { currentFriends.push({ id: data.accepterId, username: data.accepterUsername }); } renderAllFriendRelatedLists(); renderOnlineUsersList(); }
+        function handleYourRequestRejected(data) { console.log("DEBUG: Your friend request rejected by:", data.rejecterUsername); addSystemMessage(`${data.rejecterUsername} rejected your friend request.`, 'globalChatView'); currentPendingSent = currentPendingSent.filter(req => req.id !== data.rejecterId); renderAllFriendRelatedLists(); }
+        function handleFriendRemovedLocally(data){ console.log("DEBUG: You removed friend:", data.friendUsername); addSystemMessage(`You removed ${data.friendUsername} as a friend.`, 'globalChatView'); currentFriends = currentFriends.filter(f => f.id !== data.friendId); renderAllFriendRelatedLists(); renderOnlineUsersList(); }
+        function handleYouWereRemoved(data){ console.log("DEBUG: You were removed as friend by:", data.removerUsername); addSystemMessage(`${data.removerUsername} removed you as a friend.`, 'globalChatView'); currentFriends = currentFriends.filter(f => f.id !== data.removerId); renderAllFriendRelatedLists(); renderOnlineUsersList(); }
+        function renderAllFriendRelatedLists() {
+            if (!friendRequestsReceivedDisplay || !friendsListDisplay || !friendRequestsSentDisplay) return;
+            friendRequestsReceivedDisplay.innerHTML = ''; currentPendingReceived.forEach(req => { const li = document.createElement('li'); li.innerHTML = `<span class="username-text">${req.username}</span> <div class="friend-actions"><button class="accept-btn" data-id="${req.id}">Accept</button><button class="reject-btn" data-id="${req.id}">Reject</button></div>`; friendRequestsReceivedDisplay.appendChild(li); });
+            friendsListDisplay.innerHTML = ''; currentFriends.sort((a,b) => a.username.localeCompare(b.username)).forEach(friend => { const li = document.createElement('li'); li.innerHTML = `<span class="friend-name">${friend.username}</span><div class="friend-actions"><button class="chat-btn" data-username="${friend.username}">Chat</button><button class="remove-btn" data-username="${friend.username}">Remove</button></div>`; friendsListDisplay.appendChild(li); });
+            friendRequestsSentDisplay.innerHTML = ''; currentPendingSent.forEach(req => { const li = document.createElement('li'); li.textContent = `${req.username} (Pending)`; friendRequestsSentDisplay.appendChild(li); });
+        }
+        function updateUserList(usernames) { console.log("DEBUG: Updating global online user list:", usernames); currentOnlineUsers = usernames.filter(u => u !== null && u !== undefined); renderOnlineUsersList(); }
+        function renderOnlineUsersList() {
+            if (!onlineUsersDisplay) return; onlineUsersDisplay.innerHTML = '';
+            currentOnlineUsers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            currentOnlineUsers.forEach(username => {
+                const li = document.createElement('li'); const nameSpan = document.createElement('span'); nameSpan.textContent = username; nameSpan.classList.add("username-text"); li.appendChild(nameSpan); li.dataset.username = username;
+                if (username === myUsername) { li.classList.add('is-me'); nameSpan.textContent += " (You)"; }
+                else {
+                    const isFriend = currentFriends.some(f => f.username === username); const isPendingSent = currentPendingSent.some(p => p.username === username); const isPendingReceived = currentPendingReceived.some(p => p.username === username);
+                    const actionsDiv = document.createElement('div'); actionsDiv.classList.add('user-actions');
+                    if (!isFriend && !isPendingSent && !isPendingReceived) { const addFriendBtn = document.createElement('button'); addFriendBtn.textContent = 'Add Friend'; addFriendBtn.classList.add('add-friend-btn'); addFriendBtn.dataset.username = username; actionsDiv.appendChild(addFriendBtn); }
+                    else if (isPendingSent) { const pendingSpan = document.createElement('span'); pendingSpan.textContent = '(Req. Sent)'; pendingSpan.style.cssText = 'font-size:0.8em; opacity:0.7;'; actionsDiv.appendChild(pendingSpan); }
+                    else if (isPendingReceived) { const pendingSpan = document.createElement('span'); pendingSpan.textContent = '(Req. Received)'; pendingSpan.style.cssText = 'font-size:0.8em; opacity:0.7;'; actionsDiv.appendChild(pendingSpan); }
+                    else if (isFriend) { const chatBtn = document.createElement('button'); chatBtn.textContent = 'Chat'; chatBtn.classList.add('chat-btn'); chatBtn.dataset.username = username; actionsDiv.appendChild(chatBtn); }
+                    if (actionsDiv.hasChildNodes()) li.appendChild(actionsDiv);
+                }
+                onlineUsersDisplay.appendChild(li);
+            });
+        }
+
+
+        // --- UI Interaction Functions (openOrCreatePMConversation, switchConversation, displayChatMessage, etc. ) ---
+        function openOrCreatePMConversation(username, switchToIt = true) { /* ... modified to manage PM views ... */ }
+        function switchConversation(conversationId) { /* ... modified to request history and manage PM views ... */ }
+        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... same ... */ }
+        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { /* ... same ... */ }
+        function addSystemMessage(text, viewIdOrConvId = null) { /* ... same ... */ }
+        function handleSendMessageToServer() { /* ... same ... */ }
+        function openOrCreatePMConversation(username, switchToIt = true) { if (!username || username === myUsername) return null; console.log(`DEBUG: Opening/creating PM with ${username}. Switch: ${switchToIt}`); const conversationId = `pm_${username}`; let conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`); if (!conversationTab && conversationList) { conversationTab = document.createElement('li'); conversationTab.textContent = username; conversationTab.dataset.conversationId = conversationId; const unreadIndicator = document.createElement('span'); unreadIndicator.classList.add('unread-indicator'); conversationTab.appendChild(unreadIndicator); conversationTab.addEventListener('click', () => switchConversation(conversationId)); conversationList.appendChild(conversationTab); }
+            let pmView = document.getElementById(conversationId + "View");
+            if (!pmView && chatContent) {
+                pmView = document.createElement('div'); pmView.id = conversationId + "View"; pmView.classList.add('chat-view'); 
+                const pmMessagesContainer = document.createElement('div'); pmMessagesContainer.id = `messagesContainer_${conversationId}`; pmMessagesContainer.classList.add('messages-container');
+                const pmHeader = document.createElement('p'); pmHeader.classList.add('system-message'); pmHeader.textContent = `Private Chat with ${username}`; pmHeader.style.fontWeight = 'bold'; pmMessagesContainer.appendChild(pmHeader);
+                const loadingIndicator = document.createElement('p'); loadingIndicator.classList.add('system-message', 'loading-history'); loadingIndicator.textContent = 'Loading history...'; loadingIndicator.dataset.conversationId = `${conversationId}_loading`; pmMessagesContainer.appendChild(loadingIndicator);
+                pmView.appendChild(pmMessagesContainer); chatContent.appendChild(pmView); pmMessageContainers[username] = pmMessagesContainer; 
+            }
+            if (switchToIt) { switchMainView(conversationId + "View"); switchConversation(conversationId); } // Switch main view AND conversation tab
+            return conversationId; 
+        }
+        function switchConversation(conversationId) { // This primarily handles the conversation tab list and message input placeholder
+            console.log(`DEBUG: Switching conversation tab to ${conversationId}`);
+            if (activeConversationId === conversationId && document.querySelector(`#messagesContainer_${conversationId}.active-chat`)) {
+                 // If it's already the active conversation AND its message container is visible, ensure correct main view
+                 const targetViewId = (conversationId === 'global') ? 'globalChatView' : conversationId + "View";
+                 if (activeViewId !== targetViewId) switchMainView(targetViewId);
+                 return;
+            }
+            activeConversationId = conversationId;
+            document.querySelectorAll('#conversationList li').forEach(li => { const isActive = li.dataset.conversationId === conversationId; li.classList.toggle('active', isActive); if (isActive) { li.classList.remove('has-unread'); } });
+            // Main view switching is now handled by switchMainView, called from nav or openOrCreatePM
+            const targetViewIdForMessageArea = (conversationId === 'global') ? 'globalChatView' : conversationId + "View";
+            document.querySelectorAll('.chat-content .chat-view').forEach(view => {
+                 const associatedMessagesContainer = view.querySelector('.messages-container');
+                 if (associatedMessagesContainer) {
+                     associatedMessagesContainer.classList.toggle('active-chat', view.id === targetViewIdForMessageArea);
+                     if (view.id === targetViewIdForMessageArea) {
+                         associatedMessagesContainer.scrollTop = associatedMessagesContainer.scrollHeight;
+                     }
+                 }
+            });
+
+            const historyIdToRequest = conversationId === 'global' ? 'global_chat' : conversationId; 
+            const recipientUsernameForPMHistory = conversationId.startsWith('pm_') ? conversationId.replace('pm_', '') : null;
+            if (socket && socket.connected && !loadedHistories.has(historyIdToRequest)) { console.log(`DEBUG: Requesting history for ${historyIdToRequest}`); const loadingIndicator = document.querySelector(`.loading-history[data-conversation-id="${historyIdToRequest}_loading"]`); if (loadingIndicator) loadingIndicator.style.display = 'block'; socket.emit('request_history', { conversationId: historyIdToRequest, recipientUsername: recipientUsernameForPMHistory }); }
+            if (!messageInput) return;
+            if (conversationId === 'global') { messageInput.placeholder = "Type global message or /msg user text"; } 
+            else { const targetUser = conversationId.replace('pm_', ''); messageInput.placeholder = `Private message to ${targetUser}...`; }
+            messageInput.focus();
+        }
+        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { const targetConversationId = isPM ? `pm_${(pmType === 'sent' ? otherParty : senderUsername)}` : 'global'; let targetContainer = document.getElementById(`messagesContainer_${targetConversationId}`); let formattedTime = ''; try { const date = new Date(timestampISO); if (!isNaN(date.getTime())) { formattedTime = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }); } else { formattedTime = "??:??"; } } catch (e) { console.error("Error formatting date:", timestampISO, e); formattedTime = "??:??"; } if (!targetContainer) { if (isPM && pmType === 'received') { console.log("DEBUG: Received PM for inactive conversation, creating UI for:", senderUsername); const newConvId = openOrCreatePMConversation(senderUsername, false); targetContainer = document.getElementById(`messagesContainer_${newConvId}`); if (!targetContainer) { console.error(`DEBUG: Failed to find/create container for PM with ${senderUsername}`); return; } appendMessageToContainer(targetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty); } else { console.warn(`DEBUG: messagesContainer not found for ID: messagesContainer_${targetConversationId}`); return; } } else { appendMessageToContainer(targetContainer, text, senderUsername, formattedTime, messageSocketId, isPM, pmType, otherParty); } }
+        function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { const isOwnMessage = (socket && messageSocketId === socket.id && myUsername); const messageClass = isOwnMessage ? 'sent' : 'received'; const messageDiv = document.createElement('div'); messageDiv.classList.add('message', messageClass); const bubbleDiv = document.createElement('div'); bubbleDiv.classList.add('message-bubble'); let metaPrefix = ""; if (isPM) { bubbleDiv.classList.add(pmType === 'sent' ? 'pm-sent' : 'pm-received'); metaPrefix = pmType === 'sent' ? `(PM to ${otherParty}) ` : `(PM from ${senderUsername}) `; } const textP = document.createElement('p'); textP.classList.add('message-text'); textP.textContent = text; const metaSpan = document.createElement('span'); metaSpan.classList.add('message-meta'); const metaUsernameDisplay = isOwnMessage ? 'You' : senderUsername; metaSpan.textContent = `${metaPrefix}${metaUsernameDisplay} • ${formattedTimestamp}`; bubbleDiv.appendChild(textP); bubbleDiv.appendChild(metaSpan); messageDiv.appendChild(bubbleDiv); containerElement.appendChild(messageDiv); if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], translateY: [15, 0], scale: [0.95, 1], duration: 450, easing: 'easeOutExpo' }); } if ('scrollBehavior' in document.documentElement.style) { containerElement.scrollTo({ top: containerElement.scrollHeight, behavior: 'smooth' }); } else { containerElement.scrollTop = containerElement.scrollHeight; } }
+        function addSystemMessage(text, viewIdOrConvId = null) { let targetContainer; if (viewIdOrConvId) { if (document.getElementById(`messagesContainer_${viewIdOrConvId}`)) { targetContainer = document.getElementById(`messagesContainer_${viewIdOrConvId}`); } else if (document.getElementById(viewIdOrConvId) && document.getElementById(viewIdOrConvId).querySelector('.messages-container')) { targetContainer = document.getElementById(viewIdOrConvId).querySelector('.messages-container'); } } if (!targetContainer) targetContainer = document.querySelector('.chat-view.active-view .messages-container'); if (!targetContainer) targetContainer = globalMessagesContainer; if (!targetContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; } const messageDiv = document.createElement('div'); messageDiv.classList.add('system-message'); messageDiv.textContent = text; targetContainer.appendChild(messageDiv); targetContainer.scrollTop = targetContainer.scrollHeight; if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], duration: 400, easing: 'easeOutQuad' }); } }
+        function handleSendMessageToServer() { if (!messageInput || !sendMessageBtn) return; const messageText = messageInput.value.trim(); if (!messageText) return; if (!socket || !socket.connected) { addSystemMessage("Cannot send: Not connected."); return; } if (!myUsername) { addSystemMessage("Cannot send: Username not set."); showAuthView('login'); return; } const pmMatch = messageText.match(/^\/msg\s+([a-zA-Z0-9_]{3,15})\s+(.+)/); if (pmMatch) { const recipientUsername = pmMatch[1]; const pmText = pmMatch[2]; if (recipientUsername.toLowerCase() === myUsername.toLowerCase()) { addSystemMessage("You cannot /msg yourself.", activeViewId); return; } console.log(`DEBUG: Sending explicit PM to ${recipientUsername}: ${pmText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: pmText }); openOrCreatePMConversation(recipientUsername, true); } else if (activeConversationId === 'global') { console.log(`DEBUG: Sending global message: ${messageText}`); const messageData = { text: messageText }; const now = new Date(); const timestamp = now.toISOString(); displayChatMessage(messageText, myUsername, timestamp, socket.id, false, null, 'global'); socket.emit('send_message', messageData); } else if (activeConversationId.startsWith('pm_')) { const recipientUsername = activeConversationId.replace('pm_', ''); console.log(`DEBUG: Sending implicit PM to ${recipientUsername}: ${messageText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: messageText }); const now = new Date(); const timestamp = now.toISOString(); displayChatMessage(messageText, myUsername, timestamp, socket.id, true, 'sent', recipientUsername); } else { console.error("DEBUG: Unknown active conversation ID:", activeConversationId); addSystemMessage("Error: Cannot determine recipient.", activeViewId); } messageInput.value = ''; messageInput.style.height = 'auto'; messageInput.focus(); }
+
+
+        // --- Event Listeners for UI (Auth, Main message, Nav, Friend Actions) ---
+        if (loginForm) { /* ... */ } if (registerForm) { /* ... */ } if (showRegisterLink) { /* ... */ } if (showLoginLink) { /* ... */ } if (logoutButton) { /* ... */ }
+        if (sendMessageBtn && messageInput) { /* ... */ }
+        if (navigationList) { /* ... new listener for main view switching ... */ }
+        if (conversationList) { /* ... listener for PM tab switching ... */ }
+        if (sidebar) { /* ... listener for friend actions and online user "Add Friend" ... */ }
+         if (loginForm) loginForm.addEventListener('submit', handleLogin); else console.warn("Login form not found");
+         if (registerForm) registerForm.addEventListener('submit', handleRegister); else console.warn("Register form not found");
+         if (showRegisterLink) showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showAuthView('register'); }); else console.warn("ShowRegisterLink not found");
+         if (showLoginLink) showLoginLink.addEventListener('click', (e) => { e.preventDefault(); showAuthView('login'); }); else console.warn("ShowLoginLink not found");
+         if (logoutButton) logoutButton.addEventListener('click', handleLogout); else console.warn("Logout button not found");
+         if (sendMessageBtn && messageInput) { sendMessageBtn.addEventListener('click', handleSendMessageToServer); messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToServer(); } }); messageInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; }); } else { console.warn("DEBUG: messageInput or sendMessageBtn for chat not found."); }
+         if (navigationList) { navigationList.addEventListener('click', (event) => { const targetLi = event.target.closest('li[data-view-id]'); if (targetLi) { switchMainView(targetLi.dataset.viewId); } }); } else { console.warn("DEBUG: Navigation list not found."); }
+         if (conversationList) { conversationList.addEventListener('click', (event) => { const targetLi = event.target.closest('li[data-conversation-id]'); if (targetLi) { switchConversation(targetLi.dataset.conversationId); } }); } else { console.warn("DEBUG: Conversation list not found."); }
+         if(sidebar) { sidebar.addEventListener('click', (event) => { if (!socket || !socket.connected) return; const targetButton = event.target.closest('button'); if (!targetButton) return; const actionUsername = targetButton.dataset.username; const actionUserId = targetButton.dataset.id; if (targetButton.classList.contains('accept-btn') && actionUserId) { socket.emit('respond_to_friend_request', { requesterId: actionUserId, accepted: true }); } else if (targetButton.classList.contains('reject-btn') && actionUserId) { socket.emit('respond_to_friend_request', { requesterId: actionUserId, accepted: false }); } else if (targetButton.classList.contains('chat-btn') && actionUsername) { openOrCreatePMConversation(actionUsername, true); } else if (targetButton.classList.contains('remove-btn') && actionUsername) { if (confirm(`Remove ${actionUsername} as friend?`)) { socket.emit('remove_friend', { friendUsername: actionUsername }); } } else if (targetButton.classList.contains('add-friend-btn') && actionUsername) { socket.emit('send_friend_request', { targetUsername: actionUsername }); targetButton.textContent = 'Sent'; targetButton.disabled = true; } }); }
+
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(currentTheme);
+            if (authToken && localStorage.getItem('userId')) { // Also check for userId
+                console.log("DEBUG: Found token and userId. Show chat, then connect.");
+                myUsername = localStorage.getItem('username');
+                myUserId = localStorage.getItem('userId');
+                if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`;
+                showChatLayout(); 
+                connectToServer();
+            } else {
+                console.log("DEBUG: No token or userId. Show auth view.");
+                showAuthView('login');
+            }
+        });
+    </script>
+</body>
+</html>
