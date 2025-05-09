@@ -3,12 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Chat</title>
+    <title>Nexus Chat - Friends</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <!-- Socket.IO Client: Adjust src for CDN or local -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
-        /* PASTE YOUR FULL CSS (from the version that included Phase 3&4 styles) HERE */
+        /* YOUR EXISTING FULL CSS + NEW STYLES FOR FRIEND LISTS */
+        /* ... (Paste your existing CSS from the Phase 3&4 integration here) ... */
+        /* Example new styles (you'll need to expand and refine these) */
+        .sidebar .friend-list-section ul {
+            list-style: none; padding: 0; margin: 0 0 10px 0;
+        }
+        .sidebar .friend-list-section li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            font-size: 0.9em;
+            border-bottom: 1px solid var(--ui-border);
+            transition: background-color 0.2s ease;
+        }
+        .sidebar .friend-list-section li:hover {
+            background-color: rgba(0,0,0,0.04);
+        }
+        body.dark-mode .sidebar .friend-list-section li:hover {
+            background-color: rgba(255,255,255,0.04);
+        }
+        .sidebar .friend-list-section .friend-actions button {
+            background-color: transparent;
+            border: 1px solid var(--primary-accent);
+            color: var(--primary-accent);
+            padding: 3px 6px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar .friend-list-section .friend-actions button:hover {
+            background-color: var(--primary-accent);
+            color: white;
+        }
+         body.dark-mode .sidebar .friend-list-section .friend-actions button {
+             border-color: var(--primary-accent-dark);
+             color: var(--primary-accent-dark);
+         }
+         body.dark-mode .sidebar .friend-list-section .friend-actions button:hover {
+             background-color: var(--primary-accent-dark);
+             color: var(--ui-bg-opaque-dark);
+         }
+
+        .sidebar .friend-list-section .friend-actions .accept-btn {
+            border-color: #28a745; color: #28a745;
+        }
+        .sidebar .friend-list-section .friend-actions .accept-btn:hover {
+            background-color: #28a745; color: white;
+        }
+        .sidebar .friend-list-section .friend-actions .reject-btn,
+        .sidebar .friend-list-section .friend-actions .remove-btn {
+            border-color: #dc3545; color: #dc3545;
+        }
+        .sidebar .friend-list-section .friend-actions .reject-btn:hover,
+        .sidebar .friend-list-section .friend-actions .remove-btn:hover {
+            background-color: #dc3545; color: white;
+        }
+
+        .user-list li .add-friend-btn { /* For online users list */
+             font-size: 0.8em;
+             margin-left: auto;
+             padding: 2px 5px;
+             border: 1px solid var(--secondary-accent);
+             color: var(--secondary-accent);
+             background-color: transparent;
+             border-radius: 3px;
+             cursor: pointer;
+        }
+         .user-list li .add-friend-btn:hover {
+             background-color: var(--secondary-accent);
+             color: white;
+         }
+        /* --- Paste all your other CSS here from the previous full index.html --- */
          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
         :root { /* ... (all your CSS variables) ... */ 
             --font-primary: 'Roboto', sans-serif; --font-display: 'Orbitron', sans-serif;
@@ -20,7 +95,6 @@
         body.dark-mode { /* ... (dark mode variables) ... */ 
             --bg-color: var(--bg-color-dark); --text-color: var(--text-color-dark); --primary-accent: var(--primary-accent-dark); --secondary-accent: var(--secondary-accent-dark); --ui-bg: var(--ui-bg-dark); --ui-bg-opaque: var(--ui-bg-opaque-dark); --ui-border: var(--ui-border-dark); --msg-sent-bg: var(--msg-sent-bg-dark); --msg-sent-text: var(--msg-sent-text-dark); --msg-received-bg: var(--msg-received-bg-dark); --msg-received-text: var(--msg-received-text-dark); --shadow: var(--shadow-dark); --input-bg: var(--input-bg-dark); --placeholder-color: var(--placeholder-color-dark);
         }
-        /* ... (Rest of your full CSS from before) ... */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: var(--font-primary); background-color: var(--bg-color); background: linear-gradient(135deg, var(--bg-color), var(--secondary-accent)); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; transition: background var(--transition-speed) var(--transition-smooth), color var(--transition-speed) var(--transition-smooth); }
         .app-container { width: 95vw; max-width: 800px; height: 90vh; max-height: 750px; background-color: var(--ui-bg); backdrop-filter: blur(var(--blur-amount)); border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--ui-border); transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth); }
@@ -54,10 +128,10 @@
         .sidebar { width: 180px; border-right: 1px solid var(--ui-border); display: flex; flex-direction: column; background-color: transparent; padding-top: 15px; padding-bottom: 15px; overflow-y: auto; flex-shrink: 0; transition: background-color var(--transition-speed) var(--transition-smooth), border-color var(--transition-speed) var(--transition-smooth); }
         .sidebar h2 { font-size: 0.75em; padding: 8px 15px 4px 15px; margin-top: 10px; color: var(--secondary-accent); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
         .sidebar h2:first-of-type { margin-top: 0; }
-        .user-list, .conversation-list { list-style: none; padding: 0; margin: 0 0 15px 0; }
-        .user-list li, .conversation-list li { padding: 10px 15px; font-size: 0.9em; cursor: pointer; border-bottom: 1px solid var(--ui-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.2s var(--transition-smooth), color 0.2s var(--transition-smooth); position: relative; }
-        .user-list li:hover, .conversation-list li:hover { background-color: rgba(0,0,0,0.04); }
-        body.dark-mode .user-list li:hover, body.dark-mode .conversation-list li:hover { background-color: rgba(255,255,255,0.04); }
+        .user-list, .conversation-list, .friend-list-section ul { list-style: none; padding: 0; margin: 0 0 10px 0; }
+        .user-list li, .conversation-list li, .friend-list-section li { padding: 10px 15px; font-size: 0.9em; cursor: pointer; border-bottom: 1px solid var(--ui-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.2s var(--transition-smooth), color 0.2s var(--transition-smooth); position: relative; display: flex; justify-content: space-between; align-items: center;}
+        .user-list li:hover, .conversation-list li:hover, .friend-list-section li:hover { background-color: rgba(0,0,0,0.04); }
+        body.dark-mode .user-list li:hover, body.dark-mode .conversation-list li:hover, body.dark-mode .friend-list-section li:hover { background-color: rgba(255,255,255,0.04); }
         .user-list li.is-me { font-style: italic; color: var(--primary-accent); cursor: default; }
         .conversation-list li.active { background-color: var(--primary-accent); color: white; font-weight: bold; }
         body.dark-mode .conversation-list li.active { color: var(--ui-bg-opaque-dark); }
@@ -91,7 +165,6 @@
         .message-input-area button:hover { background: var(--secondary-accent); }
         .message-input-area button:active { transform: scale(0.97); }
         .message-input-area button svg { width: 18px; height: 18px; fill: white; }
-
     </style>
 </head>
 <body>
@@ -105,20 +178,52 @@
             </div>
         </div>
 
-         <div id="authContainer">
+         <div id="authContainer"> <!-- Auth forms as before -->
             <form id="loginForm"><h2>Login</h2><input type="text" id="loginUsername" placeholder="Username" required><input type="password" id="loginPassword" placeholder="Password" required><button type="submit">Login</button><p id="loginError" class="error-message"></p><p>Don't have an account? <a href="#" id="showRegisterLink">Register</a></p></form>
             <form id="registerForm" style="display: none;"><h2>Register</h2><input type="text" id="registerUsername" placeholder="Username (3-15 chars, A-Z, 0-9, _)" required><input type="password" id="registerPassword" placeholder="Password (min 6 chars)" required><input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required><button type="submit">Register</button><p id="registerError" class="error-message"></p><p>Already have an account? <a href="#" id="showLoginLink">Login</a></p></form>
          </div>
 
         <div class="chat-main" id="chatMainArea" style="display: none;">
             <div class="sidebar" id="sidebar">
-                <h2>Online Users</h2> <ul class="user-list" id="userList"></ul>
-                <h2>Conversations</h2> <ul class="conversation-list" id="conversationList"><li class="active" data-conversation-id="global">Global Chat</li></ul>
+                <h2>Conversations</h2>
+                <ul class="conversation-list" id="conversationList">
+                    <li class="active" data-conversation-id="global">Global Chat</li>
+                    <!-- PM Tabs Populated by JS -->
+                </ul>
+
+                <div class="friend-list-section">
+                    <h2>Online Users</h2>
+                    <ul class="user-list" id="userList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+
+                <div class="friend-list-section">
+                    <h2>Friend Requests</h2>
+                    <ul id="friendRequestsReceivedList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+                
+                <div class="friend-list-section">
+                    <h2>My Friends</h2>
+                    <ul id="friendsList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+                
+                <div class="friend-list-section" style="display: none;"> <!-- Hidden for now, can enable later -->
+                    <h2>Pending Sent Requests</h2>
+                    <ul id="friendRequestsSentList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
             </div>
             <div class="chat-content" id="chatContent">
                 <div class="messages-container active-chat" id="messagesContainer_global">
-                    <p class="system-message loading-history" data-conversation-id="global_chat_loading" style="display:none;">Loading history...</p>
+                     <p class="system-message loading-history" data-conversation-id="global_loading" style="display:none;">Loading history...</p>
                 </div>
+                <!-- PM Message Containers Added by JS -->
             </div>
         </div>
 
@@ -130,63 +235,281 @@
 
     <script>
         // --- DOM Elements ---
-        const themeSwitcher = document.getElementById('themeSwitcher'); const switchThumb = document.getElementById('switchThumb'); const windowTitle = document.getElementById('windowTitle'); const connectionStatusEl = document.getElementById('connectionStatus'); const logoutButton = document.getElementById('logoutButton'); const authContainer = document.getElementById('authContainer'); const loginForm = document.getElementById('loginForm'); const registerForm = document.getElementById('registerForm'); const loginUsernameInput = document.getElementById('loginUsername'); const loginPasswordInput = document.getElementById('loginPassword'); const loginErrorDisplay = document.getElementById('loginError'); const registerUsernameInput = document.getElementById('registerUsername'); const registerPasswordInput = document.getElementById('registerPassword'); const registerConfirmPasswordInput = document.getElementById('registerConfirmPassword'); const registerErrorDisplay = document.getElementById('registerError'); const showRegisterLink = document.getElementById('showRegisterLink'); const showLoginLink = document.getElementById('showLoginLink'); const chatMainArea = document.getElementById('chatMainArea'); const sidebar = document.getElementById('sidebar'); const userList = document.getElementById('userList'); const conversationList = document.getElementById('conversationList'); const chatContent = document.getElementById('chatContent'); const chatInputArea = document.getElementById('chatInputArea'); const messageInput = document.getElementById('messageInput'); const sendMessageBtn = document.getElementById('sendMessageBtn'); const globalMessagesContainer = document.getElementById('messagesContainer_global'); // Specific ref
+        const themeSwitcher = document.getElementById('themeSwitcher'); const switchThumb = document.getElementById('switchThumb'); const windowTitle = document.getElementById('windowTitle'); const connectionStatusEl = document.getElementById('connectionStatus'); const logoutButton = document.getElementById('logoutButton'); const authContainer = document.getElementById('authContainer'); const loginForm = document.getElementById('loginForm'); const registerForm = document.getElementById('registerForm'); const loginUsernameInput = document.getElementById('loginUsername'); const loginPasswordInput = document.getElementById('loginPassword'); const loginErrorDisplay = document.getElementById('loginError'); const registerUsernameInput = document.getElementById('registerUsername'); const registerPasswordInput = document.getElementById('registerPassword'); const registerConfirmPasswordInput = document.getElementById('registerConfirmPassword'); const registerErrorDisplay = document.getElementById('registerError'); const showRegisterLink = document.getElementById('showRegisterLink'); const showLoginLink = document.getElementById('showLoginLink'); const chatMainArea = document.getElementById('chatMainArea'); const sidebar = document.getElementById('sidebar'); const userList = document.getElementById('userList'); const conversationList = document.getElementById('conversationList'); const chatContent = document.getElementById('chatContent'); const chatInputArea = document.getElementById('chatInputArea'); const messageInput = document.getElementById('messageInput'); const sendMessageBtn = document.getElementById('sendMessageBtn'); const globalMessagesContainer = document.getElementById('messagesContainer_global');
+        // Friend System UI Elements
+        const friendRequestsReceivedList = document.getElementById('friendRequestsReceivedList');
+        const friendsList = document.getElementById('friendsList');
+        const friendRequestsSentList = document.getElementById('friendRequestsSentList'); // For future use
 
         // --- App State ---
         const ACTIVE_SERVER_URL = 'https://chat-server-kbrx.onrender.com';
-        let socket = null; let myUsername = localStorage.getItem('username') || null; let authToken = localStorage.getItem('token') || null;
+        let socket = null; let myUsername = localStorage.getItem('username') || null; let myUserId = null; // Will be set on login from token
+        let authToken = localStorage.getItem('token') || null;
         let activeConversationId = 'global';
         const pmMessageContainers = {}; const loadedHistories = new Set(); 
+        let currentFriends = []; // {id, username}
+        let currentPendingReceived = []; // {id, username}
+        let currentPendingSent = []; // {id, username}
 
-        // --- Theme Logic ---
+
+        // --- Theme Logic (collapsed for brevity) ---
         let currentTheme = localStorage.getItem('app-theme') || 'light';
-        function applyTheme(theme) { /* ... */ } if (themeSwitcher) { /* ... */ }
         function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); if (typeof anime === 'function') { anime({ targets: switchThumb, translateX: theme === 'dark' ? 24 : 0, duration: 400, easing: 'easeOutQuint' }); } }
         if (themeSwitcher) { themeSwitcher.addEventListener('click', () => { currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark'; localStorage.setItem('app-theme', currentTheme); applyTheme(currentTheme); }); }
 
-        // --- UI State Functions ---
-        function showAuthView(view = 'login') { /* ... */ } function showChatView() { /* ... */ }
+        // --- UI State Functions (collapsed for brevity) ---
+        function showAuthView(view = 'login') { /* ... same ... */ }
+        function showChatView() { /* ... same ... */ }
         function showAuthView(view = 'login') { if (!authContainer || !chatMainArea || !chatInputArea) return; console.log(`DEBUG: Showing ${view} view`); authContainer.style.display = 'flex'; chatMainArea.style.display = 'none'; chatInputArea.style.display = 'none'; if (loginForm) loginForm.style.display = (view === 'login') ? 'flex' : 'none'; if (registerForm) registerForm.style.display = (view === 'register') ? 'flex' : 'none'; if (view === 'login' && loginUsernameInput) loginUsernameInput.focus(); if (view === 'register' && registerUsernameInput) registerUsernameInput.focus(); if (connectionStatusEl) connectionStatusEl.textContent = 'Login Required'; if (connectionStatusEl) connectionStatusEl.classList.remove('connected', 'error'); if (connectionStatusEl) connectionStatusEl.classList.add('disconnected'); if (logoutButton) logoutButton.style.display = 'none'; }
         function showChatView() { if (!authContainer || !chatMainArea || !chatInputArea) return; console.log("DEBUG: showChatView (authenticated)"); authContainer.style.display = 'none'; chatMainArea.style.display = 'flex'; chatInputArea.style.display = 'flex'; if (messageInput) messageInput.focus(); if (logoutButton) logoutButton.style.display = 'inline-block'; }
 
-        // --- API Call Functions ---
-        async function handleLogin(event) { /* ... Same as previous with FIXED fetch URL ... */ }
-        async function handleRegister(event) { /* ... Same as previous with FIXED fetch URL ... */ }
-        function handleLogout() { /* ... Same as previous ... */ }
-        async function handleLogin(event) { event.preventDefault(); const username = loginUsernameInput.value; const password = loginPasswordInput.value; if (loginErrorDisplay) loginErrorDisplay.textContent = ''; try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/login`; console.log("DEBUG: Attempting login to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Login failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Login successful', data); authToken = data.token; myUsername = data.user.username; localStorage.setItem('token', authToken); localStorage.setItem('username', myUsername); if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`; showChatView(); connectToServer(); } catch (error) { console.error('DEBUG: Login failed:', error); if (loginErrorDisplay) loginErrorDisplay.textContent = error.message || 'Login failed.'; } }
-        async function handleRegister(event) { event.preventDefault(); const username = registerUsernameInput.value; const password = registerPasswordInput.value; const confirmPassword = registerConfirmPasswordInput.value; if (registerErrorDisplay) registerErrorDisplay.textContent = ''; if (password !== confirmPassword) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Passwords do not match.'; return; } if (password.length < 6) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Password min 6 characters.'; return; } if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 15) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Username invalid (3-15 chars, A-Z, 0-9, _).'; return; } try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/register`; console.log("DEBUG: Attempting registration to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Registration failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Registration successful', data); alert('Registration successful! Please login.'); showAuthView('login'); } catch (error) { console.error('DEBUG: Registration failed:', error); if (registerErrorDisplay) registerErrorDisplay.textContent = error.message || 'Registration failed.'; } }
-        function handleLogout() { console.log("DEBUG: Logging out"); localStorage.removeItem('token'); localStorage.removeItem('username'); authToken = null; myUsername = null; if (socket && socket.connected) { socket.disconnect(); } socket = null; if (windowTitle) windowTitle.textContent = 'Nexus Chat'; showAuthView('login'); if(globalMessagesContainer) globalMessagesContainer.innerHTML = ''; document.querySelectorAll('.chat-content .messages-container:not(#messagesContainer_global)').forEach(div => div.remove()); if(userList) userList.innerHTML = ''; document.querySelectorAll('#conversationList li:not([data-conversation-id="global"])').forEach(li => li.remove()); Object.keys(pmMessageContainers).forEach(key => delete pmMessageContainers[key]); activeConversationId = 'global'; loadedHistories.clear(); if (conversationList) { document.querySelectorAll('#conversationList li').forEach(li => { li.classList.toggle('active', li.dataset.conversationId === 'global'); li.classList.remove('has-unread'); }); } }
 
-        // --- Socket.IO Connection (Modified for History) ---
-        function connectToServer() { /* ... same ... */ }
+        // --- API Call Functions (collapsed for brevity) ---
+        async function handleLogin(event) { /* ... same ... */ }
+        async function handleRegister(event) { /* ... same ... */ }
+        function handleLogout() { /* ... modified to clear friend data ... */ }
+        async function handleLogin(event) { event.preventDefault(); const username = loginUsernameInput.value; const password = loginPasswordInput.value; if (loginErrorDisplay) loginErrorDisplay.textContent = ''; try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/login`; console.log("DEBUG: Attempting login to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Login failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Login successful', data); authToken = data.token; myUsername = data.user.username; myUserId = data.user.id; localStorage.setItem('token', authToken); localStorage.setItem('username', myUsername); localStorage.setItem('userId', myUserId); if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`; showChatView(); connectToServer(); } catch (error) { console.error('DEBUG: Login failed:', error); if (loginErrorDisplay) loginErrorDisplay.textContent = error.message || 'Login failed.'; } }
+        async function handleRegister(event) { event.preventDefault(); const username = registerUsernameInput.value; const password = registerPasswordInput.value; const confirmPassword = registerConfirmPasswordInput.value; if (registerErrorDisplay) registerErrorDisplay.textContent = ''; if (password !== confirmPassword) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Passwords do not match.'; return; } if (password.length < 6) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Password min 6 characters.'; return; } if (!/^[a-zA-Z0-9_]+$/.test(username) || username.length < 3 || username.length > 15) { if(registerErrorDisplay) registerErrorDisplay.textContent = 'Username invalid (3-15 chars, A-Z, 0-9, _).'; return; } try { const apiUrl = `${ACTIVE_SERVER_URL}/api/auth/register`; console.log("DEBUG: Attempting registration to:", apiUrl); const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }); if (!response.ok) { let errorMsg = `Registration failed (${response.status})`; try { const errorData = await response.json(); errorMsg = errorData.message || errorMsg; } catch (jsonError) {} throw new Error(errorMsg); } const data = await response.json(); console.log('DEBUG: Registration successful', data); alert('Registration successful! Please login.'); showAuthView('login'); } catch (error) { console.error('DEBUG: Registration failed:', error); if (registerErrorDisplay) registerErrorDisplay.textContent = error.message || 'Registration failed.'; } }
+        function handleLogout() { console.log("DEBUG: Logging out"); localStorage.removeItem('token'); localStorage.removeItem('username'); localStorage.removeItem('userId'); authToken = null; myUsername = null; myUserId = null; if (socket && socket.connected) { socket.disconnect(); } socket = null; if (windowTitle) windowTitle.textContent = 'Nexus Chat'; showAuthView('login'); if(globalMessagesContainer) globalMessagesContainer.innerHTML = ''; document.querySelectorAll('.chat-content .messages-container:not(#messagesContainer_global)').forEach(div => div.remove()); if(userList) userList.innerHTML = ''; document.querySelectorAll('#conversationList li:not([data-conversation-id="global"])').forEach(li => li.remove()); Object.keys(pmMessageContainers).forEach(key => delete pmMessageContainers[key]); activeConversationId = 'global'; loadedHistories.clear(); currentFriends = []; currentPendingReceived = []; currentPendingSent = []; renderFriendLists(); if (conversationList) { document.querySelectorAll('#conversationList li').forEach(li => { li.classList.toggle('active', li.dataset.conversationId === 'global'); li.classList.remove('has-unread'); }); } }
+
+
+        // --- Socket.IO Connection & Main Event Handlers (some modified) ---
+        function connectToServer() { /* ... same connect logic ... */ }
         function handleGlobalMessage(messageData) { /* ... same ... */ }
         function handlePrivateMessage(messageData) { /* ... same ... */ }
         function handlePrivateMessageFailure(errorData) { /* ... same ... */ }
-        function updateUserList(usernames) { /* ... same ... */ }
-        function handleDisconnect(reason) { /* ... same ... */ }
+        function handleDisconnect(reason) { /* ... modified to clear friend data UI ... */ }
         function handleConnectError(err) { /* ... same ... */ }
-        function connectToServer() {
+        function connectToServer() { /* ... same basic connect, ensure it calls request_friend_data_and_user_list ... */ }
+         function connectToServer() {
             if (socket && socket.connected) { console.log("DEBUG: Socket already connected."); return; }
             if (!authToken) { console.log("DEBUG: No auth token, cannot connect socket."); showAuthView('login'); return; }
             console.log(`DEBUG: Attempting to connect socket with auth token...`);
             if(connectionStatusEl) connectionStatusEl.textContent = 'Connecting...';
             if (socket) { socket.disconnect(); } 
             socket = io(ACTIVE_SERVER_URL, { transports: ['websocket', 'polling'], reconnectionAttempts: 5, auth: { token: authToken } });
-            socket.on('connect', () => { console.log('DEBUG: Socket connected and authenticated. ID:', socket.id); if(connectionStatusEl) { connectionStatusEl.textContent = 'Online'; connectionStatusEl.classList.add('connected'); connectionStatusEl.classList.remove('disconnected', 'error'); } addSystemMessage('Connected to chat.', 'global'); showChatView(); socket.emit('request_user_list'); requestMessageHistory('global'); }); /* Request global history */
-            socket.on('load_history', ({ conversationId, messages, error }) => { console.log(`DEBUG: Received 'load_history' for ${conversationId}`, messages); const loadingIndicator = document.querySelector(`.loading-history[data-conversation-id="${conversationId}_loading"]`); if (loadingIndicator) loadingIndicator.style.display = 'none'; if (error) { addSystemMessage(`Error loading history for ${conversationId}: ${error}`, conversationId === 'global' ? 'global' : conversationId); return; } const targetContainerId = conversationId === 'global' ? 'messagesContainer_global' : `messagesContainer_${conversationId}`; const targetContainer = document.getElementById(targetContainerId); if (targetContainer) { if (!loadedHistories.has(conversationId)) { targetContainer.innerHTML = ''; if (conversationId.startsWith('pm_')) { const otherUser = conversationId.replace('pm_', ''); const pmHeader = document.createElement('p'); pmHeader.classList.add('system-message'); pmHeader.textContent = `Private Chat with ${otherUser}`; pmHeader.style.fontWeight = 'bold'; targetContainer.appendChild(pmHeader); } } messages.forEach(msg => { displayChatMessage(msg.text, msg.senderUsername, msg.timestamp, msg.socketId, conversationId !== 'global', msg.recipient ? (msg.senderUsername === myUsername ? 'sent' : 'received') : null, msg.recipient ? (msg.senderUsername === myUsername ? (onlineUsers[msg.recipient.toString()] ? onlineUsers[msg.recipient.toString()].username : 'User') : msg.senderUsername) : null ); }); targetContainer.scrollTop = targetContainer.scrollHeight; loadedHistories.add(conversationId); } else { console.warn(`DEBUG: Target container not found for history: ${targetContainerId}`); } });
-            socket.on('connect_error', (err) => { console.error(`DEBUG: Socket Connection/Auth Error:`, err.message); if (err.message.toLowerCase().includes('authentication error')) { addSystemMessage(`Authentication failed: ${err.message}. Logging out.`, 'global'); handleLogout(); } else { addSystemMessage(`Connection Error: ${err.message}. Retrying...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Error'; connectionStatusEl.classList.add('error'); connectionStatusEl.classList.remove('connected', 'disconnected'); } } });
-            socket.on('disconnect', (reason) => { console.log(`DEBUG: Socket disconnected. Reason: ${reason}`); addSystemMessage(`Disconnected: ${reason}. Reconnecting...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Offline'; connectionStatusEl.classList.add('disconnected'); connectionStatusEl.classList.remove('connected', 'error'); } loadedHistories.clear(); });
-            socket.on('receive_message', handleGlobalMessage); socket.on('receive_private_message', handlePrivateMessage); socket.on('private_message_failed', handlePrivateMessageFailure); socket.on('update_user_list', updateUserList); socket.on('user_connected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has joined.`, 'global'); }); socket.on('user_disconnected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has left.`, 'global'); }); socket.on('general_error', (errorMessage) => { addSystemMessage(`Server Error: ${errorMessage}`, 'global'); });
+            
+            socket.on('connect', () => {
+                console.log('DEBUG: Socket connected and authenticated. ID:', socket.id);
+                if(connectionStatusEl) { /* ... update status ... */ }
+                if(connectionStatusEl) { connectionStatusEl.textContent = 'Online'; connectionStatusEl.classList.add('connected'); connectionStatusEl.classList.remove('disconnected', 'error'); }
+                addSystemMessage('Connected to chat.', 'global'); 
+                showChatView(); 
+                socket.emit('request_friend_data_and_user_list'); // Combined request
+                requestMessageHistory('global'); 
+            });
+
+            socket.on('load_history', ({ conversationId, messages, error }) => { /* ... same as before ... */ });
+            socket.on('connect_error', handleConnectError);
+            socket.on('disconnect', handleDisconnect);
+            socket.on('receive_message', handleGlobalMessage); 
+            socket.on('receive_private_message', handlePrivateMessage); 
+            socket.on('private_message_failed', handlePrivateMessageFailure); 
+            socket.on('update_user_list', updateUserList); // This now mainly updates online status indicators
+            socket.on('update_friend_data', handleFriendDataUpdate); // NEW: For all friend-related data
+            socket.on('incoming_friend_request', handleIncomingFriendRequest); // NEW
+            socket.on('your_friend_request_accepted', handleYourRequestAccepted); // NEW
+            socket.on('your_friend_request_rejected', handleYourRequestRejected); // NEW
+            socket.on('friend_removed_confirmation', handleFriendRemovedLocally); // NEW: You removed someone
+            socket.on('you_were_removed_as_friend', handleYouWereRemoved); // NEW: Someone removed you
+            socket.on('friend_request_error', (data) => { addSystemMessage(`Friend Request Error: ${data.message}`, 'global');}); // Generic error
+            socket.on('friend_action_error', (data) => { addSystemMessage(`Friend Action Error: ${data.message}`, 'global');}); // Generic error
+
+            socket.on('user_connected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has joined.`, 'global'); });
+            socket.on('user_disconnected', (username) => { if (username !== myUsername) addSystemMessage(`${username} has left.`, 'global'); });
+            socket.on('general_error', (errorMessage) => { addSystemMessage(`Server Error: ${errorMessage}`, 'global'); });
         }
+
+        // --- Specific Event Handlers ---
+        function handleGlobalMessage(messageData) { /* ... */ }
+        function handlePrivateMessage(messageData) { /* ... */ }
+        function handlePrivateMessageFailure(errorData) { /* ... */ }
         function handleGlobalMessage(messageData) { console.log("DEBUG: Received global message:", messageData); if (!socket || !messageData.socketId || (messageData.socketId !== socket.id)) { displayChatMessage(messageData.text, messageData.senderUsername, messageData.timestamp, messageData.socketId, false, null, 'global'); } }
         function handlePrivateMessage(messageData) { console.log("DEBUG: Received private message data:", messageData); let participant = ""; let isOwn = false; if (messageData.type === 'sent') { participant = messageData.recipientUsername; isOwn = true; } else if (messageData.type === 'received') { participant = messageData.senderUsername; isOwn = false; } else { return; } const conversationId = openOrCreatePMConversation(participant, false); displayChatMessage(messageData.text, isOwn ? myUsername : participant, messageData.timestamp, isOwn ? socket.id : null, true, messageData.type, participant); if (!isOwn && conversationId !== activeConversationId) { const conversationTab = document.querySelector(`#conversationList li[data-conversation-id="${conversationId}"]`); if (conversationTab) { conversationTab.classList.add('has-unread'); } } }
         function handlePrivateMessageFailure(errorData) { console.log("DEBUG: Private message failed:", errorData); const message = `Failed to send PM to "${errorData.recipientUsername}". Reason: ${errorData.reason}`; addSystemMessage(message, 'global'); }
-        function updateUserList(usernames) { console.log("DEBUG: Received user list update:", usernames); if (!userList) return; const onlineUsersList = usernames.filter(u => u !== null && u !== undefined); userList.innerHTML = ''; onlineUsersList.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())); onlineUsersList.forEach(username => { const li = document.createElement('li'); li.textContent = username; li.dataset.username = username; if (username === myUsername) { li.classList.add('is-me'); li.textContent += " (You)"; } else { li.addEventListener('click', () => openOrCreatePMConversation(username, true)); } userList.appendChild(li); }); }
+        function handleDisconnect(reason) { console.log(`DEBUG: Socket disconnected. Reason: ${reason}`); addSystemMessage(`Disconnected: ${reason}. Reconnecting...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Offline'; connectionStatusEl.classList.add('disconnected'); connectionStatusEl.classList.remove('connected', 'error'); } loadedHistories.clear(); currentFriends = []; currentPendingReceived = []; currentPendingSent = []; renderFriendLists(); /* ... rest ... */ }
+        function handleConnectError(err) { console.error(`DEBUG: Connection Error to ${ACTIVE_SERVER_URL}:`, err.message); if (err.message.toLowerCase().includes('authentication error')) { addSystemMessage(`Authentication failed: ${err.message}. Logging out.`, 'global'); handleLogout(); } else { addSystemMessage(`Connection Error: ${err.message}. Retrying...`, 'global'); if(connectionStatusEl) { connectionStatusEl.textContent = 'Error'; connectionStatusEl.classList.add('error'); connectionStatusEl.classList.remove('connected', 'disconnected'); } } }
 
-        // --- UI Interaction Functions ---
+
+        // --- Friend System Client Logic ---
+        function handleFriendDataUpdate(data) {
+            console.log("DEBUG: Received friend data update:", data);
+            currentFriends = data.friends || [];
+            currentPendingReceived = data.pendingReceived || [];
+            currentPendingSent = data.pendingSent || [];
+            renderFriendLists();
+        }
+
+        function handleIncomingFriendRequest(data) { // { requesterId, requesterUsername }
+            console.log("DEBUG: Incoming friend request from:", data.requesterUsername);
+            addSystemMessage(`New friend request from ${data.requesterUsername}! Check sidebar.`, 'global');
+            // Optimistically add to local pending list and re-render
+            if (!currentPendingReceived.find(req => req.id === data.requesterId)) {
+                currentPendingReceived.push({ id: data.requesterId, username: data.requesterUsername });
+                renderFriendLists();
+            }
+        }
+
+        function handleYourRequestAccepted(data) { // { accepterId, accepterUsername }
+            console.log("DEBUG: Your friend request accepted by:", data.accepterUsername);
+            addSystemMessage(`${data.accepterUsername} accepted your friend request!`, 'global');
+            // Remove from pendingSent, add to friends, re-render
+            currentPendingSent = currentPendingSent.filter(req => req.id !== data.accepterId);
+            if (!currentFriends.find(f => f.id === data.accepterId)) {
+                currentFriends.push({ id: data.accepterId, username: data.accepterUsername });
+            }
+            renderFriendLists();
+             // Also update online user list to remove "Add Friend" if they appear there
+             if (socket) socket.emit('request_friend_data_and_user_list');
+        }
+        function handleYourRequestRejected(data) { // { rejecterId, rejecterUsername }
+            console.log("DEBUG: Your friend request rejected by:", data.rejecterUsername);
+            addSystemMessage(`${data.rejecterUsername} rejected your friend request.`, 'global');
+            currentPendingSent = currentPendingSent.filter(req => req.id !== data.rejecterId);
+            renderFriendLists();
+        }
+        function handleFriendRemovedLocally(data){ // { friendId, friendUsername }
+            console.log("DEBUG: You removed friend:", data.friendUsername);
+            addSystemMessage(`You removed ${data.friendUsername} as a friend.`, 'global');
+            currentFriends = currentFriends.filter(f => f.id !== data.friendId);
+            renderFriendLists();
+            if (socket) socket.emit('request_friend_data_and_user_list'); // Refresh online user buttons
+        }
+        function handleYouWereRemoved(data){ // { removerId, removerUsername }
+            console.log("DEBUG: You were removed as friend by:", data.removerUsername);
+            addSystemMessage(`${data.removerUsername} removed you as a friend.`, 'global');
+            currentFriends = currentFriends.filter(f => f.id !== data.removerId);
+            renderFriendLists();
+             if (socket) socket.emit('request_friend_data_and_user_list');
+        }
+
+
+        function renderFriendLists() {
+            if (!friendRequestsReceivedList || !friendsList || !friendRequestsSentList) {
+                 console.warn("DEBUG: Friend list UI elements not found for rendering.");
+                 return;
+            }
+            // Render Pending Received Requests
+            friendRequestsReceivedList.innerHTML = '';
+            currentPendingReceived.forEach(req => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${req.username}</span> 
+                                <div class="friend-actions">
+                                    <button class="accept-btn" data-id="${req.id}">Accept</button>
+                                    <button class="reject-btn" data-id="${req.id}">Reject</button>
+                                </div>`;
+                friendRequestsReceivedList.appendChild(li);
+            });
+
+            // Render Friends
+            friendsList.innerHTML = '';
+            currentFriends.sort((a,b) => a.username.localeCompare(b.username)).forEach(friend => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="friend-name">${friend.username}</span>
+                                <div class="friend-actions">
+                                    <button class="chat-btn" data-username="${friend.username}">Chat</button>
+                                    <button class="remove-btn" data-username="${friend.username}">Remove</button>
+                                </div>`;
+                friendsList.appendChild(li);
+            });
+
+            // Render Pending Sent Requests (Optional for display)
+            friendRequestsSentList.innerHTML = '';
+            currentPendingSent.forEach(req => {
+                const li = document.createElement('li');
+                li.textContent = `${req.username} (Pending)`;
+                // Add cancel button if needed later
+                friendRequestsSentList.appendChild(li);
+            });
+        }
+
+        // Delegated event listeners for friend actions
+        if(sidebar) {
+            sidebar.addEventListener('click', (event) => {
+                if (!socket || !socket.connected) return;
+
+                const target = event.target;
+                const requesterId = target.dataset.id;
+                const targetUsername = target.dataset.username;
+
+                if (target.classList.contains('accept-btn') && requesterId) {
+                    socket.emit('respond_to_friend_request', { requesterId, accepted: true });
+                } else if (target.classList.contains('reject-btn') && requesterId) {
+                    socket.emit('respond_to_friend_request', { requesterId, accepted: false });
+                } else if (target.classList.contains('chat-btn') && targetUsername) {
+                    openOrCreatePMConversation(targetUsername, true);
+                } else if (target.classList.contains('remove-btn') && targetUsername) {
+                    if (confirm(`Are you sure you want to remove ${targetUsername} as a friend?`)) {
+                        socket.emit('remove_friend', { friendUsername: targetUsername });
+                    }
+                } else if (target.classList.contains('add-friend-btn') && targetUsername) { // From Online User List
+                    socket.emit('send_friend_request', { targetUsername: targetUsername });
+                    target.textContent = 'Sent'; // Basic feedback
+                    target.disabled = true;
+                }
+            });
+        }
+
+        // Modified to add "Add Friend" button for non-friends in online list
+        function updateUserList(usernames) {
+            console.log("DEBUG: Updating online user list:", usernames);
+            if (!userList) return;
+            const onlineUsersList = usernames.filter(u => u !== null && u !== undefined);
+            userList.innerHTML = '';
+            onlineUsersList.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            onlineUsersList.forEach(username => {
+                const li = document.createElement('li');
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = username;
+                li.appendChild(nameSpan);
+                
+                li.dataset.username = username;
+
+                if (username === myUsername) {
+                    li.classList.add('is-me');
+                    nameSpan.textContent += " (You)";
+                } else {
+                    // Check if user is already a friend or has a pending request
+                    const isFriend = currentFriends.some(f => f.username === username);
+                    const isPendingSent = currentPendingSent.some(p => p.username === username);
+                    const isPendingReceived = currentPendingReceived.some(p => p.username === username);
+
+                    if (!isFriend && !isPendingSent && !isPendingReceived) {
+                        const addFriendBtn = document.createElement('button');
+                        addFriendBtn.textContent = 'Add';
+                        addFriendBtn.classList.add('add-friend-btn');
+                        addFriendBtn.dataset.username = username; // For delegated event listener
+                        li.appendChild(addFriendBtn);
+                    } else if (isPendingSent) {
+                        const pendingSpan = document.createElement('span');
+                        pendingSpan.textContent = '(Req. Sent)';
+                        pendingSpan.style.fontSize = '0.8em';
+                        pendingSpan.style.marginLeft = 'auto';
+                        pendingSpan.style.opacity = '0.7';
+                        li.appendChild(pendingSpan);
+                    } else if (isPendingReceived) {
+                         const pendingSpan = document.createElement('span');
+                        pendingSpan.textContent = '(Req. Received)';
+                        pendingSpan.style.fontSize = '0.8em';
+                        pendingSpan.style.marginLeft = 'auto';
+                        pendingSpan.style.opacity = '0.7';
+                        li.appendChild(pendingSpan);
+                    } else if (isFriend) {
+                        // Could add a "Chat" button here too or rely on Friends list
+                         nameSpan.addEventListener('click', () => openOrCreatePMConversation(username, true)); // Make name clickable if friend
+                         nameSpan.style.cursor = 'pointer';
+                    }
+                }
+                userList.appendChild(li);
+            });
+        }
+
+
+        // --- UI Interaction Functions (openOrCreatePMConversation, switchConversation, displayChatMessage, etc. ) ---
+        // These mostly remain the same, ensure displayChatMessage and addSystemMessage target correctly
         function openOrCreatePMConversation(username, switchToConversation = true) { /* ... same ... */ }
-        function switchConversation(conversationId) { /* ... modified to request history ... */ }
-        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... same with timestamp formatting ... */ }
+        function switchConversation(conversationId) { /* ... same, requests history ... */ }
+        function displayChatMessage(text, senderUsername, timestampISO, messageSocketId, isPM = false, pmType = null, otherParty = null) { /* ... same ... */ }
         function appendMessageToContainer(containerElement, text, senderUsername, formattedTimestamp, messageSocketId, isPM, pmType, otherParty) { /* ... same ... */ }
         function addSystemMessage(text, targetId = null) { /* ... same ... */ }
         function handleSendMessageToServer() { /* ... same ... */ }
@@ -197,8 +520,7 @@
         function addSystemMessage(text, targetId = null) { let targetContainer; if (targetId) { targetContainer = document.getElementById(`messagesContainer_${targetId}`); } else { targetContainer = document.querySelector('.chat-content .messages-container.active-chat'); } if (!targetContainer) targetContainer = document.getElementById('messagesContainer_global'); if (!targetContainer) { console.warn("DEBUG: messagesContainer not found for system message"); return; } const messageDiv = document.createElement('div'); messageDiv.classList.add('system-message'); messageDiv.textContent = text; targetContainer.appendChild(messageDiv); targetContainer.scrollTop = targetContainer.scrollHeight; if (typeof anime === 'function') { anime({ targets: messageDiv, opacity: [0, 1], duration: 400, easing: 'easeOutQuad' }); } }
         function handleSendMessageToServer() { if (!messageInput || !sendMessageBtn) return; const messageText = messageInput.value.trim(); if (!messageText) return; if (!socket || !socket.connected) { addSystemMessage("Cannot send: Not connected."); return; } if (!myUsername) { addSystemMessage("Cannot send: Username not set."); showAuthView('login'); return; } const pmMatch = messageText.match(/^\/msg\s+([a-zA-Z0-9_]{3,15})\s+(.+)/); if (pmMatch) { const recipientUsername = pmMatch[1]; const pmText = pmMatch[2]; if (recipientUsername.toLowerCase() === myUsername.toLowerCase()) { addSystemMessage("You cannot /msg yourself.", 'global'); return; } console.log(`DEBUG: Sending explicit PM to ${recipientUsername}: ${pmText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: pmText }); openOrCreatePMConversation(recipientUsername, true); } else if (activeConversationId === 'global') { console.log(`DEBUG: Sending global message: ${messageText}`); const messageData = { text: messageText }; const now = new Date(); const timestamp = now.toISOString(); displayChatMessage(messageText, myUsername, timestamp, socket.id, false, null, 'global'); socket.emit('send_message', messageData); } else if (activeConversationId.startsWith('pm_')) { const recipientUsername = activeConversationId.replace('pm_', ''); console.log(`DEBUG: Sending implicit PM to ${recipientUsername}: ${messageText}`); socket.emit('send_private_message', { recipientUsername: recipientUsername, text: messageText }); } else { console.error("DEBUG: Unknown active conversation ID:", activeConversationId); addSystemMessage("Error: Cannot determine recipient.", 'global'); } messageInput.value = ''; messageInput.style.height = 'auto'; messageInput.focus(); }
 
-
-        // --- Event Listeners for UI ---
+        // --- Event Listeners for UI (Main message, login, etc.) ---
         if (loginForm) { /* ... */ } if (registerForm) { /* ... */ } if (showRegisterLink) { /* ... */ } if (showLoginLink) { /* ... */ } if (logoutButton) { /* ... */ }
         if (sendMessageBtn && messageInput) { /* ... */ } const globalChatTab = document.querySelector('#conversationList li[data-conversation-id="global"]'); if (globalChatTab) { /* ... */ }
          if (loginForm) loginForm.addEventListener('submit', handleLogin); else console.warn("Login form not found");
@@ -209,12 +531,14 @@
          if (sendMessageBtn && messageInput) { sendMessageBtn.addEventListener('click', handleSendMessageToServer); messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToServer(); } }); messageInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; }); } else { console.warn("DEBUG: messageInput or sendMessageBtn for chat not found."); }
          if (globalChatTab) { globalChatTab.addEventListener('click', () => switchConversation('global')); } else { console.warn("DEBUG: Global chat tab not found.") }
 
+
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             applyTheme(currentTheme);
             if (authToken) {
                 console.log("DEBUG: Found token. Optimistically show chat, then connect.");
                 myUsername = localStorage.getItem('username');
+                myUserId = localStorage.getItem('userId'); // Restore userId
                 if (windowTitle && myUsername) windowTitle.textContent = `Nexus Chat (${myUsername})`;
                 showChatView(); 
                 connectToServer();
